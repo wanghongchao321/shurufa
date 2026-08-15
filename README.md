@@ -4,12 +4,12 @@
 
 这是一个不依赖自建后端的 Android IME。APK 录音后直接调用 OpenRouter：
 
-- 上方四个按钮选择：中文、英文、法语、中→法。
+- 上方三个按钮选择：中文、英文、法语；中→法独立模式已移除。
 - 底部大按钮按下开始录音，松开后发送并上屏。
 - 录音采用 16 kHz、单声道、24 kbps AAC，减少慢速网络下的上传等待。
-- 四种模式的音频全部先由 OpenRouter 内的 `openai/gpt-transcribe` 转写；中文直接上屏，英文和法语再由 Lite 修正语法，中→法再由 Lite 翻译。
-- 中→法模式将中文语音直接输出为法语。
-- 所有语音识别固定使用 `openai/gpt-transcribe`；`google/gemini-3.5-flash-lite` 只处理文字修正和翻译，不再接收音频。
+- 三种模式的音频全部先由 OpenRouter 内的 `openai/gpt-transcribe` 自动识别语言并转写。
+- 中文模式保留语音原语言，因此也可以显示英文、法语或其他语言；英文模式无论输入何种语言都返回英文；法语模式无论输入何种语言都返回法语。
+- `openai/gpt-5.6-luna` 处理转写后的语法修正、翻译和上下文消歧，不直接接收音频。
 - 发送按钮兼容普通输入框，并针对微信、WhatsApp 和 WhatsApp Business 处理发送动作。
 
 ## 安全说明
@@ -47,7 +47,7 @@ gradle \
 
 ```properties
 OPENROUTER_API_KEY=你的_OpenRouter_Key
-OPENROUTER_MODEL=google/gemini-3.5-flash-lite
+OPENROUTER_MODEL=openai/gpt-5.6-luna
 ```
 
 不要把 Key 写入项目目录内受 Git 跟踪的 `gradle.properties`。
