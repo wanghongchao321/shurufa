@@ -9,7 +9,8 @@
 - 录音采用 16 kHz、单声道、24 kbps AAC，减少慢速网络下的上传等待。
 - 三种模式的音频全部先由 OpenRouter 内的 `openai/gpt-transcribe` 自动识别语言并转写。
 - 中文模式保留语音原语言，因此也可以显示英文、法语或其他语言；英文模式无论输入何种语言都返回英文；法语模式无论输入何种语言都返回法语。
-- `openai/gpt-5.6-luna` 处理转写后的语法修正、翻译和上下文消歧，不直接接收音频。
+- `google/gemini-3.5-flash-lite` 处理转写后的英文/法语翻译、语法修正和上下文消歧，不直接接收音频。
+- 中文模式只调用一次转写接口以优先保证速度；英文和法语的 Lite 请求按最低延迟提供商路由，并限制输出长度。
 - 发送按钮兼容普通输入框，并针对微信、WhatsApp 和 WhatsApp Business 处理发送动作。
 
 ## 安全说明
@@ -47,7 +48,7 @@ gradle \
 
 ```properties
 OPENROUTER_API_KEY=你的_OpenRouter_Key
-OPENROUTER_MODEL=openai/gpt-5.6-luna
+OPENROUTER_MODEL=google/gemini-3.5-flash-lite
 ```
 
 不要把 Key 写入项目目录内受 Git 跟踪的 `gradle.properties`。

@@ -11,14 +11,14 @@ android {
         applicationId = "com.example.voicetranslateime"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "0.6.0"
+        versionCode = 7
+        versionName = "0.7.0"
 
         val openRouterApiKey = providers.gradleProperty("OPENROUTER_API_KEY")
             .orElse("")
             .get()
         val openRouterModel = providers.gradleProperty("OPENROUTER_MODEL")
-            .orElse("openai/gpt-5.6-luna")
+            .orElse("google/gemini-3.5-flash-lite")
             .get()
 
         buildConfigField("String", "OPENROUTER_API_KEY", openRouterApiKey.asBuildConfigString())
