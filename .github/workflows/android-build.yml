@@ -32,7 +32,7 @@ jobs:
         id: android-build
         continue-on-error: true
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.SHURUFA }}
         run: |
           set -o pipefail
           BUILD_API_KEY="${OPENROUTER_API_KEY:-compile-check-placeholder}"
@@ -77,10 +77,10 @@ jobs:
       - name: Require OpenRouter API key
         if: steps.android-build.outcome == 'success'
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.SHURUFA }}
         run: |
           if [ -z "$OPENROUTER_API_KEY" ]; then
-            echo "::error::Add the repository secret OPENROUTER_API_KEY, then rerun this workflow."
+            echo "::error::Add the repository secret SHURUFA, then rerun this workflow."
             exit 1
           fi
 

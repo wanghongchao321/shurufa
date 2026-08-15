@@ -24,7 +24,7 @@
 在仓库中添加 Actions Secret：
 
 1. 打开 **Settings → Secrets and variables → Actions**。
-2. 新建 Repository secret，名称必须是 `OPENROUTER_API_KEY`。
+2. 新建 Repository secret，名称为 `SHURUFA`。
 3. 值填写单独为本应用创建的 OpenRouter Key。
 4. 打开 **Actions → Build Android IME → Run workflow**。
 5. 构建成功后下载 `VoiceTranslateIme-debug-apk`。
