@@ -79,7 +79,7 @@ class PermissionActivity : Activity() {
         val micGranted = checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
         statusText.text = if (micGranted) {
-            "麦克风权限：已授予\n\n短按输入法按钮切换模式；长按说话，松开发送。"
+            "麦克风权限：已授予\n\n点击上方按钮选择模式；按住底部大按钮说话，松开发送。"
         } else {
             "麦克风权限：未授予\n\n请先授权，再启用并选择本输入法。"
         }

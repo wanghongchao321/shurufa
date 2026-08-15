@@ -6,19 +6,17 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
-import android.os.SystemClock
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -27,16 +25,14 @@ class VoiceImeService : InputMethodService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private lateinit var modeButton: Button
+    private lateinit var recordButton: Button
+    private val modeButtons = mutableMapOf<InputMode, Button>()
     private lateinit var modeStore: ImeModeStore
     private lateinit var recorder: ImeAudioRecorder
-    private lateinit var backendApi: ImeBackendApi
+    private lateinit var openRouterApi: OpenRouterApi
 
     private var uiPhase = UiPhase.IDLE
     private var isRecording = false
-    private var longPressTriggered = false
-    private var longPressJob: Job? = null
-    private var downAtMillis = 0L
 
     private var recordingMode = InputMode.CN
     private var recordingEditorGeneration = 0L
@@ -46,74 +42,103 @@ class VoiceImeService : InputMethodService() {
         super.onCreate()
         modeStore = ImeModeStore(this)
         recorder = ImeAudioRecorder(this)
-        backendApi = ImeBackendApi(
-            baseUrl = BuildConfig.IME_BACKEND_BASE_URL,
-            sharedToken = BuildConfig.IME_SHARED_TOKEN
+        openRouterApi = OpenRouterApi(
+            apiKey = BuildConfig.OPENROUTER_API_KEY,
+            model = BuildConfig.OPENROUTER_MODEL
         )
     }
 
     override fun onCreateInputView(): View {
-        modeButton = Button(this).apply {
-            isAllCaps = false
-            textSize = 20f
-            gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            minHeight = dp(72)
-            background = roundedBackground(COLOR_IDLE)
-            contentDescription = "输入模式。短按切换模式，长按录音"
+        modeButtons.clear()
 
-            setOnClickListener {
-                if (uiPhase == UiPhase.IDLE) {
-                    modeStore.moveToNext()
-                    renderButton()
+        val modeRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        InputMode.entries.forEach { mode ->
+            val button = Button(this).apply {
+                isAllCaps = false
+                text = mode.displayName
+                textSize = 15f
+                minHeight = dp(52)
+                contentDescription = "选择${mode.displayName}模式"
+                setOnClickListener {
+                    if (uiPhase == UiPhase.IDLE) {
+                        modeStore.select(mode)
+                        renderButtons()
+                    }
                 }
             }
+            modeButtons[mode] = button
+            modeRow.addView(
+                button,
+                LinearLayout.LayoutParams(0, dp(56), 1f).apply {
+                    marginStart = dp(3)
+                    marginEnd = dp(3)
+                }
+            )
+        }
+
+        recordButton = Button(this).apply {
+            isAllCaps = false
+            textSize = 22f
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            minHeight = dp(88)
+            background = roundedBackground(COLOR_IDLE)
+            contentDescription = "按住说话，松开发送"
 
             setOnTouchListener { view, event ->
-                handleButtonTouch(view, event)
+                handleRecordTouch(view, event)
             }
         }
 
-        renderButton()
-        return modeButton
+        renderButtons()
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(6), dp(8), dp(6), dp(8))
+            addView(
+                modeRow,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(56)
+                )
+            )
+            addView(
+                recordButton,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(92)
+                ).apply {
+                    topMargin = dp(8)
+                }
+            )
+        }
     }
 
-    private fun handleButtonTouch(view: View, event: MotionEvent): Boolean {
+    private fun handleRecordTouch(view: View, event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 if (uiPhase != UiPhase.IDLE) return true
-
-                downAtMillis = SystemClock.elapsedRealtime()
-                longPressTriggered = false
-                longPressJob?.cancel()
-                longPressJob = serviceScope.launch {
-                    delay(LONG_PRESS_MILLIS)
-                    longPressTriggered = true
-                    beginRecording()
-                }
+                view.isPressed = true
+                beginRecording()
                 return true
             }
 
             MotionEvent.ACTION_UP -> {
-                longPressJob?.cancel()
-
-                when {
-                    isRecording -> finishRecordingAndSubmit()
-                    !longPressTriggered &&
-                        SystemClock.elapsedRealtime() - downAtMillis < LONG_PRESS_MILLIS -> {
-                        view.performClick()
-                    }
-                }
+                view.isPressed = false
+                if (isRecording) finishRecordingAndSubmit()
                 return true
             }
 
             MotionEvent.ACTION_CANCEL -> {
-                longPressJob?.cancel()
+                view.isPressed = false
                 if (isRecording) {
                     isRecording = false
                     recorder.cancel()
                     uiPhase = UiPhase.IDLE
-                    renderButton()
+                    renderButtons()
                 }
                 return true
             }
@@ -143,7 +168,7 @@ class VoiceImeService : InputMethodService() {
             .onSuccess {
                 isRecording = true
                 uiPhase = UiPhase.RECORDING
-                renderButton()
+                renderButtons()
             }
             .onFailure {
                 Toast.makeText(
@@ -160,7 +185,7 @@ class VoiceImeService : InputMethodService() {
 
         if (file == null) {
             uiPhase = UiPhase.IDLE
-            renderButton()
+            renderButtons()
             Toast.makeText(this, "录音过短，请重试", Toast.LENGTH_SHORT).show()
             return
         }
@@ -174,11 +199,11 @@ class VoiceImeService : InputMethodService() {
         requestGeneration: Long
     ) {
         uiPhase = UiPhase.SENDING
-        renderButton()
+        renderButtons()
 
         serviceScope.launch {
             try {
-                val text = backendApi.process(file, mode)
+                val text = openRouterApi.process(file, mode)
 
                 if (requestGeneration == editorGeneration) {
                     currentInputConnection?.commitText(text, 1)
@@ -198,25 +223,34 @@ class VoiceImeService : InputMethodService() {
             } finally {
                 file.delete()
                 uiPhase = UiPhase.IDLE
-                if (::modeButton.isInitialized) renderButton()
+                if (::recordButton.isInitialized) renderButtons()
             }
         }
     }
 
-    private fun renderButton() {
+    private fun renderButtons() {
         val mode = modeStore.current.displayName
-        modeButton.text = when (uiPhase) {
-            UiPhase.IDLE -> mode
-            UiPhase.RECORDING -> "$mode · 松开发送"
-            UiPhase.SENDING -> "$mode · 处理中…"
+        recordButton.text = when (uiPhase) {
+            UiPhase.IDLE -> "按住说话 · $mode"
+            UiPhase.RECORDING -> "松开发送 · $mode"
+            UiPhase.SENDING -> "处理中… · $mode"
         }
-        modeButton.background = roundedBackground(
+        recordButton.background = roundedBackground(
             when (uiPhase) {
                 UiPhase.IDLE -> COLOR_IDLE
                 UiPhase.RECORDING -> COLOR_RECORDING
                 UiPhase.SENDING -> COLOR_SENDING
             }
         )
+
+        modeButtons.forEach { (buttonMode, button) ->
+            val selected = buttonMode == modeStore.current
+            button.isEnabled = uiPhase == UiPhase.IDLE
+            button.setTextColor(if (selected) Color.WHITE else COLOR_MODE_TEXT)
+            button.background = roundedBackground(
+                if (selected) COLOR_MODE_SELECTED else COLOR_MODE_IDLE
+            )
+        }
     }
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
@@ -226,7 +260,6 @@ class VoiceImeService : InputMethodService() {
 
     override fun onFinishInput() {
         editorGeneration++
-        longPressJob?.cancel()
 
         if (isRecording) {
             isRecording = false
@@ -253,9 +286,11 @@ class VoiceImeService : InputMethodService() {
         (value * resources.displayMetrics.density).toInt()
 
     private companion object {
-        const val LONG_PRESS_MILLIS = 350L
         const val COLOR_IDLE = 0xFF3158D4.toInt()
         const val COLOR_RECORDING = 0xFFD43838.toInt()
         const val COLOR_SENDING = 0xFF6B7280.toInt()
+        const val COLOR_MODE_SELECTED = 0xFF3158D4.toInt()
+        const val COLOR_MODE_IDLE = 0xFFE5E7EB.toInt()
+        const val COLOR_MODE_TEXT = 0xFF1F2937.toInt()
     }
 }

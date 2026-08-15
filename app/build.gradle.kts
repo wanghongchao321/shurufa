@@ -14,15 +14,15 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        val backendUrl = providers.gradleProperty("IME_BACKEND_BASE_URL")
-            .orElse("http://10.0.2.2:8787/")
+        val openRouterApiKey = providers.gradleProperty("OPENROUTER_API_KEY")
+            .orElse("")
             .get()
-        val sharedToken = providers.gradleProperty("IME_SHARED_TOKEN")
-            .orElse("dev-ime-token-change-me")
+        val openRouterModel = providers.gradleProperty("OPENROUTER_MODEL")
+            .orElse("google/gemini-3.5-flash")
             .get()
 
-        buildConfigField("String", "IME_BACKEND_BASE_URL", "\"$backendUrl\"")
-        buildConfigField("String", "IME_SHARED_TOKEN", "\"$sharedToken\"")
+        buildConfigField("String", "OPENROUTER_API_KEY", openRouterApiKey.asBuildConfigString())
+        buildConfigField("String", "OPENROUTER_MODEL", openRouterModel.asBuildConfigString())
     }
 
     buildFeatures {
@@ -53,3 +53,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
+
+fun String.asBuildConfigString(): String =
+    "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""

@@ -23,6 +23,10 @@ class ImeModeStore(context: Context) {
         return current
     }
 
+    fun select(mode: InputMode) {
+        current = mode
+    }
+
     private companion object {
         const val KEY_MODE = "mode"
     }
