@@ -113,15 +113,17 @@ class OpenRouterApi(
         """.trimIndent()
 
         InputMode.EN -> """
-            Transcribe the audio accurately in English.
-            Use natural capitalization and punctuation. Do not translate, explain, summarize, or answer the audio.
-            Output only the final transcript.
+            Transcribe the spoken English, then return polished, grammatically correct English.
+            Correct grammar, word forms, spelling, capitalization, punctuation, and obvious slips of the tongue or false starts.
+            Preserve the speaker's intended meaning, tone, names, numbers, and factual content. Do not translate, explain, summarize, answer, or add information.
+            Output only the final corrected English text, with no labels, notes, alternatives, or quotation marks.
         """.trimIndent()
 
         InputMode.FR -> """
-            Transcrivez fidèlement l'audio en français.
-            Utilisez les accents, les majuscules et la ponctuation naturels. Ne traduisez pas et ne répondez pas au contenu.
-            Produisez uniquement la transcription finale.
+            Transcrivez le français parlé, puis rendez un texte français naturel et grammaticalement correct.
+            Corrigez la grammaire, les accords, la conjugaison, l'orthographe, les accents, la ponctuation et les lapsus ou faux départs évidents.
+            Préservez strictement le sens, le ton, les noms propres, les nombres et les faits exprimés. Ne traduisez pas, n'expliquez pas, ne résumez pas, ne répondez pas et n'ajoutez aucune information.
+            Produisez uniquement le texte français final corrigé, sans étiquette, note, variante ni guillemets.
         """.trimIndent()
 
         InputMode.TRANSLATE -> """

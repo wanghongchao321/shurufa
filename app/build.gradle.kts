@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.voicetranslateime"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
 
         val openRouterApiKey = providers.gradleProperty("OPENROUTER_API_KEY")
             .orElse("")

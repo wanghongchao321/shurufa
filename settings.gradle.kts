@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "VoiceTranslateIme"
+rootProject.name = "FeizhouWangIme"
 include(":app")

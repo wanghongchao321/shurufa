@@ -1,4 +1,4 @@
-# 安卓大模型语音与翻译输入法
+# 非洲王输入法
 
 [![Build Android IME](https://github.com/wanghongchao321/shurufa/actions/workflows/android-build.yml/badge.svg)](https://github.com/wanghongchao321/shurufa/actions/workflows/android-build.yml)
 
@@ -7,7 +7,7 @@
 - 上方四个按钮选择：中文、英文、法语、中→法。
 - 底部大按钮按下开始录音，松开后发送并上屏。
 - 录音采用 16 kHz、单声道、24 kbps AAC，减少慢速网络下的上传等待。
-- 中文、英文、法语模式输出对应语言的转写。
+- 中文模式输出原文转写；英文、法语模式会自动修正语法、拼写和标点后上屏。
 - 中→法模式将中文语音直接输出为法语。
 - 默认模型：`google/gemini-3.5-flash`。
 
@@ -28,7 +28,7 @@
 2. 新建 Repository secret，名称为 `SHURUFA`。
 3. 值填写单独为本应用创建的 OpenRouter Key。
 4. 打开 **Actions → Build Android IME → Run workflow**。
-5. 构建成功后下载 `VoiceTranslateIme-debug-apk`。
+5. 构建成功后下载 `FeizhouWangIme-debug-apk`。
 
 工作流在编译时通过 Gradle 属性把 Secret 写入 `BuildConfig.OPENROUTER_API_KEY`，Key 不会进入 Git 源码，但会存在于最终 APK 中。
 
@@ -54,7 +54,7 @@ OPENROUTER_MODEL=google/gemini-3.5-flash
 ## 安装与启用
 
 1. 安装生成的 Debug APK。
-2. 打开“语音翻译输入法”。
+2. 打开“非洲王输入法”。
 3. 授予麦克风权限。
 4. 点击“启用输入法”，在系统设置中启用。
 5. 点击“选择输入法”，切换到本输入法。
