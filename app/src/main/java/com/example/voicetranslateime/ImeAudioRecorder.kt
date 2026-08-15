@@ -29,7 +29,9 @@ class ImeAudioRecorder(
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                 setAudioSamplingRate(16_000)
                 setAudioChannels(1)
-                setAudioEncodingBitRate(64_000)
+                // Compact speech audio for faster uploads on slow connections.
+                // This is about 62.5% smaller than the previous 64 kbps payload.
+                setAudioEncodingBitRate(24_000)
                 setOutputFile(file.absolutePath)
                 prepare()
                 start()
