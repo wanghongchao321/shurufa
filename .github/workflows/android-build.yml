@@ -62,6 +62,12 @@ jobs:
               if line.startswith(("e: ", "FAILURE:", "* What went wrong:"))
               or " error: " in line
               or "Execution failed for task" in line
+              or "AndroidManifest.xml" in line
+              or "manifest merger" in line.lower()
+              or "uses-sdk" in line
+              or "AAPT:" in line
+              or "attribute " in line.lower()
+              or "not found" in line.lower()
           ][-40:]
 
           def escape(value):
