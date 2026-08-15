@@ -7,9 +7,9 @@
 - 上方四个按钮选择：中文、英文、法语、中→法。
 - 底部大按钮按下开始录音，松开后发送并上屏。
 - 录音采用 16 kHz、单声道、24 kbps AAC，减少慢速网络下的上传等待。
-- 中文模式输出原文转写；英文、法语模式会自动修正语法、拼写和标点后上屏。
+- 中文模式输出原文转写；英文模式由 Lite 识别并修正；法语模式先由 `openai/gpt-transcribe` 专门转写，再由 Lite 修正语法、拼写和标点后上屏。
 - 中→法模式将中文语音直接输出为法语。
-- 固定使用模型：`google/gemini-3.5-flash-lite`。
+- 中文、英文和中→法固定使用 `google/gemini-3.5-flash-lite`；法语转写使用 OpenRouter 内的 `openai/gpt-transcribe`。
 - 发送按钮兼容普通输入框，并针对微信、WhatsApp 和 WhatsApp Business 处理发送动作。
 
 ## 安全说明
