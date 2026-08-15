@@ -7,9 +7,11 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.ExtractedTextRequest
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -26,6 +28,9 @@ class VoiceImeService : InputMethodService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private lateinit var recordButton: Button
+    private lateinit var deleteButton: Button
+    private lateinit var clearButton: Button
+    private lateinit var sendButton: Button
     private val modeButtons = mutableMapOf<InputMode, Button>()
     private lateinit var modeStore: ImeModeStore
     private lateinit var recorder: ImeAudioRecorder
@@ -80,6 +85,50 @@ class VoiceImeService : InputMethodService() {
             )
         }
 
+        val actionRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        deleteButton = createActionButton(
+            label = "\u5220\u9664",
+            description = "\u5220\u9664\u5149\u6807\u524d\u7684\u4e00\u4e2a\u5b57\u7b26",
+            color = COLOR_ACTION_IDLE,
+            onClick = ::deletePreviousCharacter
+        )
+        clearButton = createActionButton(
+            label = "\u6e05\u7a7a",
+            description = "\u6e05\u7a7a\u5f53\u524d\u8f93\u5165\u6846",
+            color = COLOR_CLEAR_IDLE,
+            onClick = ::clearCurrentField
+        )
+        sendButton = createActionButton(
+            label = "\u53d1\u9001",
+            description = "\u53d1\u9001\u6216\u786e\u8ba4\u5f53\u524d\u8f93\u5165",
+            color = COLOR_SEND_IDLE,
+            onClick = ::sendCurrentInput
+        )
+
+        actionRow.addView(
+            deleteButton,
+            LinearLayout.LayoutParams(0, dp(50), 1f).apply {
+                marginEnd = dp(3)
+            }
+        )
+        actionRow.addView(
+            clearButton,
+            LinearLayout.LayoutParams(0, dp(50), 1f).apply {
+                marginStart = dp(3)
+                marginEnd = dp(3)
+            }
+        )
+        actionRow.addView(
+            sendButton,
+            LinearLayout.LayoutParams(0, dp(50), 1f).apply {
+                marginStart = dp(3)
+            }
+        )
+
         recordButton = Button(this).apply {
             isAllCaps = false
             textSize = 22f
@@ -106,6 +155,15 @@ class VoiceImeService : InputMethodService() {
                 )
             )
             addView(
+                actionRow,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(50)
+                ).apply {
+                    topMargin = dp(6)
+                }
+            )
+            addView(
                 recordButton,
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -114,6 +172,69 @@ class VoiceImeService : InputMethodService() {
                     topMargin = dp(8)
                 }
             )
+        }
+    }
+
+    private fun createActionButton(
+        label: String,
+        description: String,
+        color: Int,
+        onClick: () -> Unit
+    ) = Button(this).apply {
+        isAllCaps = false
+        text = label
+        textSize = 17f
+        minHeight = dp(46)
+        setTextColor(COLOR_MODE_TEXT)
+        background = roundedBackground(color)
+        contentDescription = description
+        setOnClickListener { onClick() }
+    }
+
+    private fun deletePreviousCharacter() {
+        val connection = currentInputConnection ?: return
+        val extracted = connection.getExtractedText(ExtractedTextRequest(), 0)
+        val hasSelection = extracted != null &&
+            extracted.selectionStart >= 0 &&
+            extracted.selectionEnd > extracted.selectionStart
+
+        if (hasSelection) {
+            connection.commitText("", 1)
+            return
+        }
+
+        if (!connection.deleteSurroundingTextInCodePoints(1, 0)) {
+            connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
+            connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
+        }
+    }
+
+    private fun clearCurrentField() {
+        val connection = currentInputConnection ?: return
+        val extracted = connection.getExtractedText(ExtractedTextRequest(), 0)
+        val textLength = extracted?.text?.length ?: 0
+
+        if (textLength > 0 && connection.setSelection(0, textLength)) {
+            connection.commitText("", 1)
+        } else {
+            connection.performContextMenuAction(android.R.id.selectAll)
+            connection.commitText("", 1)
+        }
+    }
+
+    private fun sendCurrentInput() {
+        val connection = currentInputConnection ?: return
+        val editorAction = currentInputEditorInfo?.imeOptions
+            ?.and(EditorInfo.IME_MASK_ACTION)
+            ?: EditorInfo.IME_ACTION_NONE
+
+        val handled = editorAction != EditorInfo.IME_ACTION_NONE &&
+            editorAction != EditorInfo.IME_ACTION_UNSPECIFIED &&
+            connection.performEditorAction(editorAction)
+
+        if (!handled) {
+            connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+            connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
         }
     }
 
@@ -251,6 +372,14 @@ class VoiceImeService : InputMethodService() {
                 if (selected) COLOR_MODE_SELECTED else COLOR_MODE_IDLE
             )
         }
+
+        val actionsEnabled = uiPhase == UiPhase.IDLE
+        deleteButton.isEnabled = actionsEnabled
+        clearButton.isEnabled = actionsEnabled
+        sendButton.isEnabled = actionsEnabled
+        deleteButton.alpha = if (actionsEnabled) 1f else 0.55f
+        clearButton.alpha = if (actionsEnabled) 1f else 0.55f
+        sendButton.alpha = if (actionsEnabled) 1f else 0.55f
     }
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
@@ -292,5 +421,8 @@ class VoiceImeService : InputMethodService() {
         const val COLOR_MODE_SELECTED = 0xFF3158D4.toInt()
         const val COLOR_MODE_IDLE = 0xFFE5E7EB.toInt()
         const val COLOR_MODE_TEXT = 0xFF1F2937.toInt()
+        const val COLOR_ACTION_IDLE = 0xFFDDE5F5.toInt()
+        const val COLOR_CLEAR_IDLE = 0xFFF7DADA.toInt()
+        const val COLOR_SEND_IDLE = 0xFFD9F0E1.toInt()
     }
 }
