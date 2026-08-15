@@ -9,7 +9,8 @@
 - 录音采用 16 kHz、单声道、24 kbps AAC，减少慢速网络下的上传等待。
 - 中文模式输出原文转写；英文、法语模式会自动修正语法、拼写和标点后上屏。
 - 中→法模式将中文语音直接输出为法语。
-- 默认模型：`google/gemini-3.5-flash`。
+- 固定使用模型：`google/gemini-3.5-flash-lite`。
+- 发送按钮兼容普通输入框，并针对微信、WhatsApp 和 WhatsApp Business 处理发送动作。
 
 ## 安全说明
 
@@ -46,7 +47,7 @@ gradle \
 
 ```properties
 OPENROUTER_API_KEY=你的_OpenRouter_Key
-OPENROUTER_MODEL=google/gemini-3.5-flash
+OPENROUTER_MODEL=google/gemini-3.5-flash-lite
 ```
 
 不要把 Key 写入项目目录内受 Git 跟踪的 `gradle.properties`。

@@ -224,18 +224,33 @@ class VoiceImeService : InputMethodService() {
 
     private fun sendCurrentInput() {
         val connection = currentInputConnection ?: return
-        val editorAction = currentInputEditorInfo?.imeOptions
+        val editorInfo = currentInputEditorInfo
+        val editorAction = editorInfo?.imeOptions
             ?.and(EditorInfo.IME_MASK_ACTION)
             ?: EditorInfo.IME_ACTION_NONE
+        val packageName = editorInfo?.packageName.orEmpty()
 
-        val handled = editorAction != EditorInfo.IME_ACTION_NONE &&
-            editorAction != EditorInfo.IME_ACTION_UNSPECIFIED &&
-            connection.performEditorAction(editorAction)
+        val handledByAdvertisedAction = when {
+            editorInfo != null && editorInfo.actionId != 0 ->
+                connection.performEditorAction(editorInfo.actionId)
 
-        if (!handled) {
-            connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
-            connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
+            editorAction != EditorInfo.IME_ACTION_NONE &&
+                editorAction != EditorInfo.IME_ACTION_UNSPECIFIED ->
+                connection.performEditorAction(editorAction)
+
+            else -> false
         }
+
+        if (handledByAdvertisedAction) return
+
+        if (packageName in SEND_ACTION_PACKAGES &&
+            connection.performEditorAction(EditorInfo.IME_ACTION_SEND)
+        ) {
+            return
+        }
+
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
     }
 
     private fun handleRecordTouch(view: View, event: MotionEvent): Boolean {
@@ -424,5 +439,11 @@ class VoiceImeService : InputMethodService() {
         const val COLOR_ACTION_IDLE = 0xFFDDE5F5.toInt()
         const val COLOR_CLEAR_IDLE = 0xFFF7DADA.toInt()
         const val COLOR_SEND_IDLE = 0xFFD9F0E1.toInt()
+
+        val SEND_ACTION_PACKAGES = setOf(
+            "com.tencent.mm",
+            "com.whatsapp",
+            "com.whatsapp.w4b"
+        )
     }
 }
