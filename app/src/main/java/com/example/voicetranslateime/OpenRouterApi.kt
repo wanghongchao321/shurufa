@@ -157,6 +157,7 @@ class OpenRouterApi(
                 JSONObject()
                     .put("role", "user")
                     .put(
+                        "content",
                         """
                             TRANSCRIPTION A — Google Chirp 3:
                             $chirpTranscript
