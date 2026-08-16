@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 class VoiceImeService : InputMethodService() {
-    private enum class UiPhase { IDLE, RECORDING, SENDING }
+    private enum class UiPhase { IDLE, RECORDING, SENDING, ERROR }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -38,6 +38,7 @@ class VoiceImeService : InputMethodService() {
 
     private var uiPhase = UiPhase.IDLE
     private var isRecording = false
+    private var lastError = ""
 
     private var recordingMode = InputMode.CN
     private var recordingEditorGeneration = 0L
@@ -256,7 +257,11 @@ class VoiceImeService : InputMethodService() {
     private fun handleRecordTouch(view: View, event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                if (uiPhase != UiPhase.IDLE) return true
+                if (uiPhase == UiPhase.SENDING || uiPhase == UiPhase.RECORDING) {
+                    return true
+                }
+                // A new press dismisses the previous visible error and retries.
+                if (uiPhase == UiPhase.ERROR) uiPhase = UiPhase.IDLE
                 view.isPressed = true
                 beginRecording()
                 return true
@@ -307,11 +312,7 @@ class VoiceImeService : InputMethodService() {
                 renderButtons()
             }
             .onFailure {
-                Toast.makeText(
-                    this,
-                    "无法启动录音：${it.message ?: "未知错误"}",
-                    Toast.LENGTH_SHORT
-                ).show()
+                showFailure("无法启动录音：${it.message ?: "未知错误"}")
             }
     }
 
@@ -320,9 +321,7 @@ class VoiceImeService : InputMethodService() {
         val file = recorder.stop()
 
         if (file == null) {
-            uiPhase = UiPhase.IDLE
-            renderButtons()
-            Toast.makeText(this, "录音过短，请重试", Toast.LENGTH_SHORT).show()
+            showFailure("录音过短或设备录音失败，请按住至少 1 秒")
             return
         }
 
@@ -351,17 +350,22 @@ class VoiceImeService : InputMethodService() {
                     ).show()
                 }
             } catch (error: Exception) {
-                Toast.makeText(
-                    this@VoiceImeService,
-                    "处理失败：${error.message ?: "网络异常"}",
-                    Toast.LENGTH_LONG
-                ).show()
+                showFailure(error.message ?: "网络异常")
             } finally {
                 file.delete()
-                uiPhase = UiPhase.IDLE
-                if (::recordButton.isInitialized) renderButtons()
+                if (uiPhase != UiPhase.ERROR) {
+                    uiPhase = UiPhase.IDLE
+                    if (::recordButton.isInitialized) renderButtons()
+                }
             }
         }
+    }
+
+    private fun showFailure(message: String) {
+        lastError = message.take(80)
+        uiPhase = UiPhase.ERROR
+        if (::recordButton.isInitialized) renderButtons()
+        Toast.makeText(this, "处理失败：$lastError", Toast.LENGTH_LONG).show()
     }
 
     private fun renderButtons() {
@@ -370,25 +374,27 @@ class VoiceImeService : InputMethodService() {
             UiPhase.IDLE -> "按住说话 · $mode"
             UiPhase.RECORDING -> "松开发送 · $mode"
             UiPhase.SENDING -> "处理中… · $mode"
+            UiPhase.ERROR -> "失败：$lastError · 按住重试"
         }
         recordButton.background = roundedBackground(
             when (uiPhase) {
                 UiPhase.IDLE -> COLOR_IDLE
                 UiPhase.RECORDING -> COLOR_RECORDING
                 UiPhase.SENDING -> COLOR_SENDING
+                UiPhase.ERROR -> COLOR_ERROR
             }
         )
 
         modeButtons.forEach { (buttonMode, button) ->
             val selected = buttonMode == modeStore.current
-            button.isEnabled = uiPhase == UiPhase.IDLE
+            button.isEnabled = uiPhase == UiPhase.IDLE || uiPhase == UiPhase.ERROR
             button.setTextColor(if (selected) Color.WHITE else COLOR_MODE_TEXT)
             button.background = roundedBackground(
                 if (selected) COLOR_MODE_SELECTED else COLOR_MODE_IDLE
             )
         }
 
-        val actionsEnabled = uiPhase == UiPhase.IDLE
+        val actionsEnabled = uiPhase == UiPhase.IDLE || uiPhase == UiPhase.ERROR
         deleteButton.isEnabled = actionsEnabled
         clearButton.isEnabled = actionsEnabled
         sendButton.isEnabled = actionsEnabled
@@ -433,6 +439,7 @@ class VoiceImeService : InputMethodService() {
         const val COLOR_IDLE = 0xFF3158D4.toInt()
         const val COLOR_RECORDING = 0xFFD43838.toInt()
         const val COLOR_SENDING = 0xFF6B7280.toInt()
+        const val COLOR_ERROR = 0xFFD97706.toInt()
         const val COLOR_MODE_SELECTED = 0xFF3158D4.toInt()
         const val COLOR_MODE_IDLE = 0xFFE5E7EB.toInt()
         const val COLOR_MODE_TEXT = 0xFF1F2937.toInt()
