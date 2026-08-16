@@ -43,10 +43,10 @@ class OpenRouterApi(
             return processLanguageEnsemble(encodedAudio, mode)
         }
 
-        val transcriptionModel = if (mode == InputMode.CN) {
-            QWEN_CHINESE_TRANSCRIPTION_MODEL
-        } else {
-            GPT_TRANSCRIPTION_MODEL
+        val transcriptionModel = when (mode) {
+            InputMode.CN, InputMode.ZH_EN, InputMode.ZH_FR ->
+                QWEN_CHINESE_TRANSCRIPTION_MODEL
+            InputMode.EN, InputMode.FR -> GPT_TRANSCRIPTION_MODEL
         }
         val transcription = transcribe(
             encodedAudio = encodedAudio,
