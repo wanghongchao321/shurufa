@@ -7,12 +7,12 @@
 - 功能区共八个按钮、每行四个：第一行“中文、英文、法语、中英”，第二行“中法、删除、清空、发送”。
 - 底部大按钮按下开始录音，松开后发送并上屏。
 - 录音采用 16 kHz、单声道、32 kbps AAC，约 4 KB/秒，在保持快速上传的同时保留更多口音语音细节。
-- 中文、英文、中英、中法使用 OpenRouter 内的 `openai/gpt-transcribe` 转写。
+- 中文、中英、中法使用 OpenRouter 内的 `openai/gpt-transcribe` 转写。
 - 音频按 OpenRouter 当前 STT 接口要求以 Base64 JSON 上传；请求失败时按钮会保持橙色并显示原因，按住即可重试。
-- 中文模式自动检测输入语言并直接上屏；英文模式固定按英语识别。
-- 法语模式把同一段音频并行发送给 `google/chirp-3` 和 `openai/gpt-transcribe`，两路都固定 `language=fr`；随后由 `openai/gpt-5.6-luna` 比较一致与冲突词、结合上下文裁决并只输出最终法语。
+- 中文模式自动检测输入语言并直接上屏。
+- 英文和法语模式都把同一段音频并行发送给 `google/chirp-3` 和 `openai/gpt-transcribe`，分别固定 `language=en` 和 `language=fr`；随后由 `openai/gpt-5.6-luna` 比较一致与冲突词、结合上下文裁决并只输出最终英文或法语。
 - 中英模式固定识别中文后翻译成英文；中法模式固定识别中文后翻译成法语。
-- `google/gemini-3.5-flash-lite` 只处理英文语法修正和中英/中法翻译，不直接接收音频；法语校验改由 GPT-5.6 Luna 完成。
+- `google/gemini-3.5-flash-lite` 只处理中英/中法翻译，不直接接收音频；英文和法语校验均由 GPT-5.6 Luna 完成。
 - 中文模式只调用一次转写接口；其他模式的 Lite 请求按最低延迟提供商路由，并限制输出长度。
 - 发送按钮兼容普通输入框，并针对微信、WhatsApp 和 WhatsApp Business 处理发送动作。
 
