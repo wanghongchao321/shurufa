@@ -6,7 +6,9 @@ enum class InputMode(
 ) {
     CN("CN", "中文"),
     EN("EN", "英文"),
-    FR("FR", "法语");
+    FR("FR", "法语"),
+    ZH_EN("ZH_EN", "中英"),
+    ZH_FR("ZH_FR", "中法");
 
     fun next(): InputMode {
         val modes = entries

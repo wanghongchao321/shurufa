@@ -57,36 +57,17 @@ class VoiceImeService : InputMethodService() {
     override fun onCreateInputView(): View {
         modeButtons.clear()
 
-        val modeRow = LinearLayout(this).apply {
+        val firstRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
 
-        InputMode.entries.forEach { mode ->
-            val button = Button(this).apply {
-                isAllCaps = false
-                text = mode.displayName
-                textSize = 15f
-                minHeight = dp(52)
-                contentDescription = "选择${mode.displayName}模式"
-                setOnClickListener {
-                    if (uiPhase == UiPhase.IDLE) {
-                        modeStore.select(mode)
-                        renderButtons()
-                    }
-                }
+        listOf(InputMode.CN, InputMode.EN, InputMode.FR, InputMode.ZH_EN)
+            .forEach { mode ->
+                firstRow.addView(createModeButton(mode), fourColumnParams())
             }
-            modeButtons[mode] = button
-            modeRow.addView(
-                button,
-                LinearLayout.LayoutParams(0, dp(56), 1f).apply {
-                    marginStart = dp(3)
-                    marginEnd = dp(3)
-                }
-            )
-        }
 
-        val actionRow = LinearLayout(this).apply {
+        val secondRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
@@ -110,25 +91,10 @@ class VoiceImeService : InputMethodService() {
             onClick = ::sendCurrentInput
         )
 
-        actionRow.addView(
-            deleteButton,
-            LinearLayout.LayoutParams(0, dp(50), 1f).apply {
-                marginEnd = dp(3)
-            }
-        )
-        actionRow.addView(
-            clearButton,
-            LinearLayout.LayoutParams(0, dp(50), 1f).apply {
-                marginStart = dp(3)
-                marginEnd = dp(3)
-            }
-        )
-        actionRow.addView(
-            sendButton,
-            LinearLayout.LayoutParams(0, dp(50), 1f).apply {
-                marginStart = dp(3)
-            }
-        )
+        secondRow.addView(createModeButton(InputMode.ZH_FR), fourColumnParams())
+        secondRow.addView(deleteButton, fourColumnParams())
+        secondRow.addView(clearButton, fourColumnParams())
+        secondRow.addView(sendButton, fourColumnParams())
 
         recordButton = Button(this).apply {
             isAllCaps = false
@@ -149,17 +115,17 @@ class VoiceImeService : InputMethodService() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(6), dp(8), dp(6), dp(8))
             addView(
-                modeRow,
+                firstRow,
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    dp(56)
+                    dp(54)
                 )
             )
             addView(
-                actionRow,
+                secondRow,
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    dp(50)
+                    dp(54)
                 ).apply {
                     topMargin = dp(6)
                 }
@@ -176,6 +142,29 @@ class VoiceImeService : InputMethodService() {
         }
     }
 
+    private fun createModeButton(mode: InputMode) = Button(this).apply {
+        isAllCaps = false
+        text = mode.displayName
+        textSize = 14f
+        minHeight = dp(50)
+        contentDescription = "选择${mode.displayName}模式"
+        setOnClickListener {
+            if (uiPhase == UiPhase.IDLE || uiPhase == UiPhase.ERROR) {
+                modeStore.select(mode)
+                uiPhase = UiPhase.IDLE
+                lastError = ""
+                renderButtons()
+            }
+        }
+        modeButtons[mode] = this
+    }
+
+    private fun fourColumnParams() =
+        LinearLayout.LayoutParams(0, dp(54), 1f).apply {
+            marginStart = dp(3)
+            marginEnd = dp(3)
+        }
+
     private fun createActionButton(
         label: String,
         description: String,
@@ -184,7 +173,7 @@ class VoiceImeService : InputMethodService() {
     ) = Button(this).apply {
         isAllCaps = false
         text = label
-        textSize = 17f
+        textSize = 15f
         minHeight = dp(46)
         setTextColor(COLOR_MODE_TEXT)
         background = roundedBackground(color)
