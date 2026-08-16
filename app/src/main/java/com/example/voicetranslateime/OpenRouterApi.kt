@@ -43,10 +43,15 @@ class OpenRouterApi(
             return processLanguageEnsemble(encodedAudio, mode)
         }
 
+        val transcriptionModel = if (mode == InputMode.CN) {
+            QWEN_CHINESE_TRANSCRIPTION_MODEL
+        } else {
+            GPT_TRANSCRIPTION_MODEL
+        }
         val transcription = transcribe(
             encodedAudio = encodedAudio,
             mode = mode,
-            transcriptionModel = GPT_TRANSCRIPTION_MODEL
+            transcriptionModel = transcriptionModel
         )
 
         if (mode == InputMode.CN) return transcription
@@ -364,6 +369,7 @@ class OpenRouterApi(
         const val OPENROUTER_TRANSCRIPTION_URL =
             "https://openrouter.ai/api/v1/audio/transcriptions"
         const val GPT_TRANSCRIPTION_MODEL = "openai/gpt-transcribe"
+        const val QWEN_CHINESE_TRANSCRIPTION_MODEL = "qwen/qwen3-asr-1.7b"
         const val CHIRP_TRANSCRIPTION_MODEL = "google/chirp-3"
         const val ADJUDICATION_MODEL = "openai/gpt-5.6-luna"
 
