@@ -11,6 +11,8 @@
 - 音频按 OpenRouter 当前 STT 接口要求以 Base64 JSON 上传；请求失败时按钮会保持橙色并显示原因，按住即可重试。
 - 中文模式由 Qwen3 ASR 1.7B 自动检测输入语言和中文方言并直接上屏，优先提升普通话、粤语及重口音/方言中文识别率。
 - 中英和中法模式固定 `language=zh`，由 Qwen3 ASR 1.7B 识别中文后再翻译成目标语言。
+- Qwen3 ASR 1.7B 单次识别超过 15 秒或请求失败时自动切换 Qwen3 ASR Flash；中文完整处理最多约 32 秒。
+- 处理中会显示“Qwen识别、切换Flash、翻译、Luna校验”等阶段，点按底部按钮可取消并重新录音。
 - 英文和法语模式都把同一段音频并行发送给 `google/chirp-3` 和 `openai/gpt-transcribe`，分别固定 `language=en` 和 `language=fr`；随后由 `openai/gpt-5.6-luna` 比较一致与冲突词、结合上下文裁决并只输出最终英文或法语。
 - 中英模式固定识别中文后翻译成英文；中法模式固定识别中文后翻译成法语。
 - `google/gemini-3.5-flash-lite` 只处理中英/中法翻译，不直接接收音频；英文和法语校验均由 GPT-5.6 Luna 完成。

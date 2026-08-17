@@ -16,10 +16,14 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.io.File
 
 class VoiceImeService : InputMethodService() {
@@ -39,6 +43,9 @@ class VoiceImeService : InputMethodService() {
     private var uiPhase = UiPhase.IDLE
     private var isRecording = false
     private var lastError = ""
+    private var processingStage = "处理中"
+    private var processingJob: Job? = null
+    private var processingGeneration = 0L
 
     private var recordingMode = InputMode.CN
     private var recordingEditorGeneration = 0L
@@ -246,7 +253,11 @@ class VoiceImeService : InputMethodService() {
     private fun handleRecordTouch(view: View, event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                if (uiPhase == UiPhase.SENDING || uiPhase == UiPhase.RECORDING) {
+                if (uiPhase == UiPhase.SENDING) {
+                    cancelProcessing()
+                    return true
+                }
+                if (uiPhase == UiPhase.RECORDING) {
                     return true
                 }
                 // A new press dismisses the previous visible error and retries.
@@ -322,12 +333,26 @@ class VoiceImeService : InputMethodService() {
         mode: InputMode,
         requestGeneration: Long
     ) {
+        val processId = ++processingGeneration
+        processingStage = "准备处理"
         uiPhase = UiPhase.SENDING
         renderButtons()
 
-        serviceScope.launch {
+        processingJob = serviceScope.launch {
             try {
-                val text = openRouterApi.process(file, mode)
+                val timeoutMs = if (mode == InputMode.CN) {
+                    CHINESE_PROCESS_TIMEOUT_MS
+                } else {
+                    OTHER_PROCESS_TIMEOUT_MS
+                }
+                val text = withTimeout(timeoutMs) {
+                    openRouterApi.process(file, mode) { stage ->
+                        if (processId == processingGeneration) {
+                            processingStage = stage
+                            renderButtons()
+                        }
+                    }
+                }
 
                 if (requestGeneration == editorGeneration) {
                     currentInputConnection?.commitText(text, 1)
@@ -338,16 +363,33 @@ class VoiceImeService : InputMethodService() {
                         Toast.LENGTH_SHORT
                     ).show()
                 }
+            } catch (_: TimeoutCancellationException) {
+                showFailure("处理超时，请检查网络后重试")
+            } catch (_: CancellationException) {
+                // User cancellation is intentionally silent and must not commit a stale result.
             } catch (error: Exception) {
                 showFailure(error.message ?: "网络异常")
             } finally {
                 file.delete()
-                if (uiPhase != UiPhase.ERROR) {
+                if (processId == processingGeneration) {
+                    processingJob = null
+                }
+                if (processId == processingGeneration && uiPhase != UiPhase.ERROR) {
                     uiPhase = UiPhase.IDLE
                     if (::recordButton.isInitialized) renderButtons()
                 }
             }
         }
+    }
+
+    private fun cancelProcessing() {
+        processingGeneration++
+        processingJob?.cancel()
+        processingJob = null
+        uiPhase = UiPhase.IDLE
+        processingStage = "处理中"
+        renderButtons()
+        Toast.makeText(this, "已取消处理，可重新录音", Toast.LENGTH_SHORT).show()
     }
 
     private fun showFailure(message: String) {
@@ -362,7 +404,7 @@ class VoiceImeService : InputMethodService() {
         recordButton.text = when (uiPhase) {
             UiPhase.IDLE -> "按住说话 · $mode"
             UiPhase.RECORDING -> "松开发送 · $mode"
-            UiPhase.SENDING -> "处理中… · $mode"
+            UiPhase.SENDING -> "$processingStage… · $mode\n点按取消"
             UiPhase.ERROR -> "失败：$lastError · 按住重试"
         }
         recordButton.background = roundedBackground(
@@ -405,6 +447,12 @@ class VoiceImeService : InputMethodService() {
             recorder.cancel()
         }
 
+        if (uiPhase == UiPhase.SENDING) {
+            processingGeneration++
+            processingJob?.cancel()
+            processingJob = null
+        }
+
         uiPhase = UiPhase.IDLE
         super.onFinishInput()
     }
@@ -435,6 +483,8 @@ class VoiceImeService : InputMethodService() {
         const val COLOR_ACTION_IDLE = 0xFFDDE5F5.toInt()
         const val COLOR_CLEAR_IDLE = 0xFFF7DADA.toInt()
         const val COLOR_SEND_IDLE = 0xFFD9F0E1.toInt()
+        const val CHINESE_PROCESS_TIMEOUT_MS = 32_000L
+        const val OTHER_PROCESS_TIMEOUT_MS = 50_000L
 
         val SEND_ACTION_PACKAGES = setOf(
             "com.tencent.mm",

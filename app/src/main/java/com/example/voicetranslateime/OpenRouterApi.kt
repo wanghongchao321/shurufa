@@ -2,9 +2,11 @@ package com.example.voicetranslateime
 
 import android.util.Base64
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
@@ -28,34 +30,37 @@ class OpenRouterApi(
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(90, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
+        .callTimeout(30, TimeUnit.SECONDS)
         .build()
 ) {
-    suspend fun process(file: File, mode: InputMode): String {
+    suspend fun process(
+        file: File,
+        mode: InputMode,
+        onStage: (String) -> Unit = {}
+    ): String {
         check(apiKey.isNotBlank()) {
             "APK 未配置 OPENROUTER_API_KEY"
         }
 
+        onStage("准备音频")
         val encodedAudio = withContext(Dispatchers.IO) {
             Base64.encodeToString(file.readBytes(), Base64.NO_WRAP)
         }
 
         if (mode == InputMode.EN || mode == InputMode.FR) {
-            return processLanguageEnsemble(encodedAudio, mode)
+            onStage("双模型识别")
+            return processLanguageEnsemble(encodedAudio, mode, onStage)
         }
 
-        val transcriptionModel = when (mode) {
-            InputMode.CN, InputMode.ZH_EN, InputMode.ZH_FR ->
-                QWEN_CHINESE_TRANSCRIPTION_MODEL
-            InputMode.EN, InputMode.FR -> GPT_TRANSCRIPTION_MODEL
-        }
-        val transcription = transcribe(
+        val transcription = transcribeChineseWithFallback(
             encodedAudio = encodedAudio,
             mode = mode,
-            transcriptionModel = transcriptionModel
+            onStage = onStage
         )
 
         if (mode == InputMode.CN) return transcription
 
+        onStage("翻译")
         return try {
             postProcessTranscript(
                 transcript = transcription,
@@ -72,7 +77,8 @@ class OpenRouterApi(
 
     private suspend fun processLanguageEnsemble(
         encodedAudio: String,
-        mode: InputMode
+        mode: InputMode,
+        onStage: (String) -> Unit
     ): String =
         coroutineScope {
             // Run both independent ASR calls concurrently so the ensemble only
@@ -92,12 +98,49 @@ class OpenRouterApi(
                 )
             }
 
+            val chirpTranscript = chirpResult.await()
+            val openAiTranscript = openAiResult.await()
+            onStage("Luna校验")
             adjudicateTranscriptions(
                 mode = mode,
-                chirpTranscript = chirpResult.await(),
-                openAiTranscript = openAiResult.await()
+                chirpTranscript = chirpTranscript,
+                openAiTranscript = openAiTranscript
             )
         }
+
+    private suspend fun transcribeChineseWithFallback(
+        encodedAudio: String,
+        mode: InputMode,
+        onStage: (String) -> Unit
+    ): String {
+        onStage("Qwen 1.7B识别")
+        return try {
+            withTimeout(QWEN_ATTEMPT_TIMEOUT_MS) {
+                transcribe(
+                    encodedAudio = encodedAudio,
+                    mode = mode,
+                    transcriptionModel = QWEN_CHINESE_TRANSCRIPTION_MODEL
+                )
+            }
+        } catch (error: TimeoutCancellationException) {
+            onStage("1.7B超时，切换Flash")
+            transcribeWithQwenFlash(encodedAudio, mode)
+        } catch (error: IOException) {
+            onStage("1.7B失败，切换Flash")
+            transcribeWithQwenFlash(encodedAudio, mode)
+        }
+    }
+
+    private suspend fun transcribeWithQwenFlash(
+        encodedAudio: String,
+        mode: InputMode
+    ): String = withTimeout(QWEN_ATTEMPT_TIMEOUT_MS) {
+        transcribe(
+            encodedAudio = encodedAudio,
+            mode = mode,
+            transcriptionModel = QWEN_FLASH_TRANSCRIPTION_MODEL
+        )
+    }
 
     private suspend fun transcribe(
         encodedAudio: String,
@@ -370,8 +413,11 @@ class OpenRouterApi(
             "https://openrouter.ai/api/v1/audio/transcriptions"
         const val GPT_TRANSCRIPTION_MODEL = "openai/gpt-transcribe"
         const val QWEN_CHINESE_TRANSCRIPTION_MODEL = "qwen/qwen3-asr-1.7b"
+        const val QWEN_FLASH_TRANSCRIPTION_MODEL =
+            "qwen/qwen3-asr-flash-2026-02-10"
         const val CHIRP_TRANSCRIPTION_MODEL = "google/chirp-3"
         const val ADJUDICATION_MODEL = "openai/gpt-5.6-luna"
+        const val QWEN_ATTEMPT_TIMEOUT_MS = 15_000L
 
         val ENGLISH_ADJUDICATION_INSTRUCTION =
             """
