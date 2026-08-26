@@ -54,6 +54,9 @@ jobs:
           restore-keys: |
             native-${{ runner.os }}-
 
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
       - name: Download native deps (ONNX Runtime)
         run: ./gradlew downloadOnnx --no-daemon
         
@@ -68,9 +71,6 @@ jobs:
           restore-keys: |
             cmake-${{ runner.os }}-
             
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-        
       - name: Run Unit Tests
         run: ./gradlew :app:testDebugUnitTest :plugin-core:testDebugUnitTest --no-daemon
         
