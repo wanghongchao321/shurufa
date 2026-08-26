@@ -24,6 +24,15 @@ class KeyboardModeTest {
     }
 
     @Test
+    fun `French schema uses French QWERTY state without ASCII passthrough`() {
+        val state = initialKeyboardLayoutState(
+            isAsciiMode = false,
+            schemaId = "french",
+        )
+        assertEquals(KeyboardLayoutState.French, state)
+    }
+
+    @Test
     fun `transition to Number works from any state`() {
         val state = KeyboardLayoutState.Chinese
         val next = state.transition(
@@ -63,6 +72,7 @@ class KeyboardModeTest {
     fun `isFullKeyboard returns true for Chinese and English`() {
         assertTrue(KeyboardLayoutState.Chinese.isFullKeyboard)
         assertTrue(KeyboardLayoutState.English.isFullKeyboard)
+        assertTrue(KeyboardLayoutState.French.isFullKeyboard)
     }
 
     @Test

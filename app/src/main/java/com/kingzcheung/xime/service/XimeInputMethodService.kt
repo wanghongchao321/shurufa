@@ -107,6 +107,7 @@ import com.kingzcheung.xime.util.FileLogger
 import com.kingzcheung.xime.util.PreeditMergeHelper
 import com.kingzcheung.xime.BuildConfig
 import com.kingzcheung.xime.ai.AiVoiceController
+import com.kingzcheung.xime.ai.ChineseKeyboardLayout
 import com.kingzcheung.xime.ai.ImeModeStore
 import com.kingzcheung.xime.ai.InputMode
 import com.kingzcheung.xime.keyboard.ActionExecutor
@@ -230,6 +231,8 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     
     internal var isTrackingVoiceButtons = false
     internal var voiceRecordingStarted = false
+    private var voiceStartJob: Job? = null
+    private var stopRequestedWhileStarting = false
     private var pendingVoiceAction: (() -> Unit)? = null
     internal var composeViewRef: View? = null
     internal var lastClearedText: String = ""
@@ -290,17 +293,43 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
 
     internal fun selectAiMode(mode: InputMode) {
         aiModeStore.select(mode)
-        val targetAsciiMode = mode.usesLatinKeyboard
-        if (uiState.value.isAsciiMode != targetAsciiMode) {
-            keyRouter.handleKeyPress("ime_switch", false)
-        } else {
-            keyboardViewModel.dispatch(
-                com.kingzcheung.xime.ui.keyboard.KeyboardDispatchAction.AsciiModeChanged(
-                    targetAsciiMode,
-                    SchemaManager.PRIMARY_SCHEMA_ID,
-                )
+        uiState.value = uiState.value.copy(aiInputMode = mode)
+
+        val (schemaId, targetAsciiMode, keyboardState) = when (mode) {
+            InputMode.EN -> Triple(
+                SchemaManager.FULL_PINYIN_SCHEMA_ID,
+                true,
+                KeyboardLayoutState.English,
             )
+            InputMode.FR -> Triple(
+                SchemaManager.FRENCH_SCHEMA_ID,
+                false,
+                KeyboardLayoutState.French,
+            )
+            else -> when (aiModeStore.chineseLayout) {
+                ChineseKeyboardLayout.T9 -> Triple(
+                    SchemaManager.PRIMARY_SCHEMA_ID,
+                    false,
+                    KeyboardLayoutState.T9Pinyin,
+                )
+                ChineseKeyboardLayout.FULL -> Triple(
+                    SchemaManager.FULL_PINYIN_SCHEMA_ID,
+                    false,
+                    KeyboardLayoutState.Chinese,
+                )
+            }
         }
+
+        // Layout feedback is immediate; native schema work remains serialized off
+        // the main thread so tapping a language never freezes the keyboard.
+        keyboardViewModel.setKeyboardState(keyboardState)
+        schemaController.switchAiSchema(schemaId, targetAsciiMode)
+    }
+
+    internal fun toggleChineseKeyboardLayout() {
+        if (!aiModeStore.current.usesChineseKeyboard) return
+        aiModeStore.toggleChineseLayout()
+        selectAiMode(aiModeStore.current)
     }
     internal val aiVoiceController by lazy {
         AiVoiceController(
@@ -316,19 +345,9 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
      * 幂等：识别已停止/无文本时各步骤自动跳过。
      */
     internal fun startAiVoiceSession(sticky: Boolean = false) {
-        if (aiVoiceController.isRecording || aiVoiceController.isProcessing) return
+        if (voiceStartJob?.isActive == true || aiVoiceController.isRecording || aiVoiceController.isProcessing) return
 
         val mode = aiModeStore.current
-        val result = aiVoiceController.start(mode, uiState.value.inputSessionId)
-        if (result.isFailure) {
-            Toast.makeText(
-                this,
-                "无法启动录音：${result.exceptionOrNull()?.message ?: "未知错误"}",
-                Toast.LENGTH_LONG,
-            ).show()
-            return
-        }
-
         val textBeforeVoice = currentInputConnection
             ?.getTextBeforeCursor(1000, 0)
             ?.toString()
@@ -342,16 +361,49 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             voiceButtonState = VoiceButtonState(bottomActive = true),
             voicePluginName = "OpenRouter · ${mode.displayName}",
             voiceRecognitionState = RecognitionState.LISTENING,
-            voiceRecognizedText = "正在聆听…",
+            voiceRecognizedText = "正在启动麦克风…",
         )
         keyboardViewModel.enterVoice()
         feedbackManager.performVibration()
         isTrackingVoiceButtons = true
         if (::keyboardContainer.isInitialized) keyboardContainer.enableVoiceButtonTracking()
+        stopRequestedWhileStarting = false
+        // This flag means the press owns an active voice session, including the
+        // short asynchronous microphone-start window. It lets ACTION_UP request
+        // a stop even when MediaRecorder.start() has not returned yet.
         voiceRecordingStarted = true
+        voiceStartJob = serviceScope.launch {
+            val result = aiVoiceController.start(mode, uiState.value.inputSessionId)
+            voiceStartJob = null
+            if (result.isFailure) {
+                Toast.makeText(
+                    this@XimeInputMethodService,
+                    "无法启动录音：${result.exceptionOrNull()?.message ?: "未知错误"}",
+                    Toast.LENGTH_LONG,
+                ).show()
+                completeAiVoiceSession(runPendingAction = false)
+                return@launch
+            }
+            uiState.value = uiState.value.copy(
+                voiceRecognitionState = RecognitionState.LISTENING,
+                voiceRecognizedText = "正在聆听，松开后识别",
+            )
+            if (stopRequestedWhileStarting) {
+                stopRequestedWhileStarting = false
+                finishAiVoiceSession()
+            }
+        }
     }
 
     internal fun finishAiVoiceSession() {
+        if (voiceStartJob?.isActive == true) {
+            stopRequestedWhileStarting = true
+            uiState.value = uiState.value.copy(
+                voiceRecognitionState = RecognitionState.PROCESSING,
+                voiceRecognizedText = "正在结束录音…",
+            )
+            return
+        }
         if (!aiVoiceController.isRecording) return
         voiceRecordingStarted = false
         uiState.value = uiState.value.copy(
@@ -359,6 +411,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             voiceRecognizedText = "准备处理…",
         )
 
+        var failureVisible = false
         aiVoiceController.stopAndSubmit(
             onStage = { stage ->
                 uiState.value = uiState.value.copy(
@@ -377,13 +430,30 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                 }
             },
             onFailure = { message ->
+                failureVisible = true
+                uiState.value = uiState.value.copy(
+                    voiceRecognitionState = RecognitionState.ERROR,
+                    voiceRecognizedText = message.take(80),
+                )
                 Toast.makeText(this, "处理失败：$message", Toast.LENGTH_LONG).show()
             },
-            onFinished = { completeAiVoiceSession() },
+            onFinished = {
+                if (failureVisible) {
+                    serviceScope.launch {
+                        delay(1_200L)
+                        completeAiVoiceSession()
+                    }
+                } else {
+                    completeAiVoiceSession()
+                }
+            },
         )
     }
 
     internal fun cancelAiVoiceSession() {
+        voiceStartJob?.cancel()
+        voiceStartJob = null
+        stopRequestedWhileStarting = false
         aiVoiceController.cancel()
         completeAiVoiceSession(runPendingAction = false)
     }
@@ -401,6 +471,8 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             pendingVoiceAction = null
         }
         keyboardViewModel.exitVoice()
+        voiceStartJob = null
+        stopRequestedWhileStarting = false
         isTrackingVoiceButtons = false
         voiceRecordingStarted = false
         voiceAmplitudeState.floatValue = 0f
@@ -1020,6 +1092,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             calculatorEngine.isActive(),
                             ) {
                                 KeyboardUiState(
+                                    aiInputMode = state.aiInputMode,
                                     isAsciiMode = state.isAsciiMode,
                                     schemaName = state.schemaName,
                                     currentSchemaId = state.currentSchemaId,
@@ -1622,6 +1695,9 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         t9PartialSegments.clear()
         // 输入法隐藏/结束输入：静默停止语音会话，丢弃未识别文本，避免迟到结果写入新输入框
         if (uiState.value.isVoiceMode || voiceRecordingStarted || aiVoiceController.isProcessing) {
+            voiceStartJob?.cancel()
+            voiceStartJob = null
+            stopRequestedWhileStarting = false
             aiVoiceController.cancel()
             isTrackingVoiceButtons = false
             voiceRecordingStarted = false

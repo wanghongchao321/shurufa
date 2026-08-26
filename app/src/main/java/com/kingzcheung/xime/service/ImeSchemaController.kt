@@ -29,6 +29,50 @@ import kotlinx.coroutines.withContext
  * 共享状态通过 service 引用访问。
  */
 internal class ImeSchemaController(private val service: XimeInputMethodService) {
+    internal fun switchAiSchema(schemaId: String, targetAsciiMode: Boolean) {
+        if (schemaId !in SchemaManager.BUILT_IN_SCHEMA_IDS) return
+
+        service.keyRouter.postRimeJob {
+            try {
+                service.rimeEngine.clearComposition()
+                if (service.rimeEngine.getCurrentSchema() != schemaId) {
+                    applyPageSizeSetting(schemaId)
+                    if (!service.rimeEngine.switchSchema(schemaId)) {
+                        Log.w(XimeInputMethodService.TAG, "AI schema switch deferred: $schemaId")
+                        return@postRimeJob
+                    }
+                }
+                if (service.rimeEngine.isAsciiMode() != targetAsciiMode) {
+                    service.rimeEngine.toggleAsciiMode()
+                }
+                SettingsPreferences.setCurrentSchema(service, schemaId)
+                service.sessionController.persistSchemaOption(
+                    "ascii_mode",
+                    service.rimeEngine.isAsciiMode(),
+                )
+
+                val actualAsciiMode = service.rimeEngine.isAsciiMode()
+                val schemaName = SchemaManager.getSchemaDisplayName(service, schemaId) ?: schemaId
+                withContext(Dispatchers.Main) {
+                    service.uiState.value = service.uiState.value.copy(
+                        isAsciiMode = actualAsciiMode,
+                        currentSchemaId = schemaId,
+                        schemaName = schemaName,
+                    )
+                    service.keyboardViewModel.dispatch(
+                        com.kingzcheung.xime.ui.keyboard.KeyboardDispatchAction.AsciiModeChanged(
+                            actualAsciiMode,
+                            schemaId,
+                        )
+                    )
+                    service.updateUI()
+                }
+            } catch (error: Exception) {
+                Log.e(XimeInputMethodService.TAG, "Failed to switch AI schema to $schemaId", error)
+            }
+        }
+    }
+
     internal suspend fun switchInputMethod(): Boolean {
         val candState = service.candidateState.value
         val pendingEnglish = candState.pendingEnglishText
@@ -267,8 +311,8 @@ internal class ImeSchemaController(private val service: XimeInputMethodService) 
     }
 
     internal fun switchSchema(schemaId: String) {
-        if (schemaId != SchemaManager.PRIMARY_SCHEMA_ID) {
-            Toast.makeText(service, "当前版本仅保留拼音九宫格", Toast.LENGTH_SHORT).show()
+        if (schemaId !in SchemaManager.BUILT_IN_SCHEMA_IDS) {
+            Toast.makeText(service, "当前版本仅提供九键、全键拼音和法语词库", Toast.LENGTH_SHORT).show()
             return
         }
         if (schemaId == HANDWRITING_SCHEMA_ID) {

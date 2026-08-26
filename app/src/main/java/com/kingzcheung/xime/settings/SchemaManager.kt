@@ -69,6 +69,13 @@ internal data class SchemaEntry(
 
 object SchemaManager {
     const val PRIMARY_SCHEMA_ID = "t9_pinyin"
+    const val FULL_PINYIN_SCHEMA_ID = "pinyin_full"
+    const val FRENCH_SCHEMA_ID = "french"
+    val BUILT_IN_SCHEMA_IDS = listOf(
+        PRIMARY_SCHEMA_ID,
+        FULL_PINYIN_SCHEMA_ID,
+        FRENCH_SCHEMA_ID,
+    )
     private const val TAG = "SchemaManager"
     private const val CUSTOM_YAML = "default.custom.yaml"
     internal val yaml = Yaml(configuration = YamlConfiguration(strictMode = false, anchorsAndAliases = com.charleskorn.kaml.AnchorsAndAliases.Permitted(maxAliasCount = UInt.MAX_VALUE)))
@@ -587,7 +594,8 @@ object SchemaManager {
 
         val schemas = mutableListOf<SchemaMeta>()
         val schemaFiles = rimeDir.listFiles { f ->
-            f.name == "$PRIMARY_SCHEMA_ID.schema.yaml"
+            f.name.removeSuffix(".schema.yaml") in BUILT_IN_SCHEMA_IDS &&
+                f.name.endsWith(".schema.yaml")
         }
             ?: return emptyList()
 
@@ -755,7 +763,7 @@ object SchemaManager {
     }
 
     fun getEnabledSchemas(context: Context): List<String> {
-        val onlySchema = listOf(PRIMARY_SCHEMA_ID)
+        val onlySchema = BUILT_IN_SCHEMA_IDS
         val customFile = getCustomYamlFile(context)
         if (!customFile.exists()) {
             setEnabledSchemas(context, onlySchema)
@@ -792,7 +800,7 @@ object SchemaManager {
 
     @Suppress("UNUSED_PARAMETER")
     fun setEnabledSchemas(context: Context, schemaIds: List<String>) {
-        val lockedSchemaIds = listOf(PRIMARY_SCHEMA_ID)
+        val lockedSchemaIds = BUILT_IN_SCHEMA_IDS
         val sb = StringBuilder()
         sb.appendLine("patch:")
         sb.appendLine("  schema_list:")

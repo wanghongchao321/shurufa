@@ -11,6 +11,7 @@ class ImeAudioRecorder(
     private var recorder: MediaRecorder? = null
     private var outputFile: File? = null
 
+    @Synchronized
     fun start() {
         check(recorder == null) { "Recorder is already running" }
 
@@ -46,6 +47,7 @@ class ImeAudioRecorder(
         }
     }
 
+    @Synchronized
     fun stop(): File? {
         val activeRecorder = recorder ?: return null
         val file = outputFile
@@ -61,6 +63,7 @@ class ImeAudioRecorder(
         }
     }
 
+    @Synchronized
     fun cancel() {
         runCatching { recorder?.stop() }
         outputFile?.delete()

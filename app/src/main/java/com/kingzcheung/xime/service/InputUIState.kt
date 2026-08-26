@@ -1,5 +1,6 @@
 package com.kingzcheung.xime.service
 
+import com.kingzcheung.xime.ai.InputMode
 import com.kingzcheung.xime.settings.SchemaInfo
 import com.kingzcheung.xime.settings.SettingsPreferences
 import com.kingzcheung.xime.speech.RecognitionState
@@ -7,6 +8,7 @@ import com.kingzcheung.xime.keyboard.ToolbarButton
 import com.kingzcheung.xime.viewmodel.SchemaSwitchUiState
 
 data class InputUIState(
+    val aiInputMode: InputMode = InputMode.CN,
     val isAsciiMode: Boolean = false,
     val schemaName: String = "",
     val currentSchemaId: String = "",

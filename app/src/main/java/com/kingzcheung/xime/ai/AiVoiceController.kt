@@ -3,10 +3,13 @@ package com.kingzcheung.xime.ai
 import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withContext
 
 class AiVoiceController(
     context: Context,
@@ -29,14 +32,18 @@ class AiVoiceController(
     val isProcessing: Boolean
         get() = processingJob?.isActive == true
 
-    fun start(mode: InputMode, inputSessionId: Long): Result<Unit> = runCatching {
+    suspend fun start(mode: InputMode, inputSessionId: Long): Result<Unit> = try {
         check(!recording) { "录音已经开始" }
         processingJob?.cancel()
         generation++
-        recorder.start()
+        withContext(Dispatchers.IO) { recorder.start() }
         activeMode = mode
         activeInputSessionId = inputSessionId
         recording = true
+        Result.success(Unit)
+    } catch (error: Throwable) {
+        withContext(NonCancellable + Dispatchers.IO) { recorder.cancel() }
+        Result.failure(error)
     }
 
     fun stopAndSubmit(
@@ -48,25 +55,25 @@ class AiVoiceController(
         if (!recording) return false
         recording = false
 
-        val file = recorder.stop()
-        if (file == null) {
-            onFailure("录音过短或录音失败，请按住空格至少 1 秒")
-            onFinished()
-            return true
-        }
-
         val requestGeneration = ++generation
         val mode = activeMode
         val inputSessionId = activeInputSessionId
         processingJob = scope.launch {
+            var file: java.io.File? = null
             try {
+                val audioFile = withContext(Dispatchers.IO) { recorder.stop() }
+                file = audioFile
+                if (audioFile == null) {
+                    onFailure("录音过短或录音失败，请按住空格至少 1 秒")
+                    return@launch
+                }
                 val timeoutMs = if (mode == InputMode.CN) {
                     CHINESE_TIMEOUT_MS
                 } else {
                     OTHER_TIMEOUT_MS
                 }
                 val text = withTimeout(timeoutMs) {
-                    api.process(file, mode, onStage)
+                    api.process(audioFile, mode, onStage)
                 }
                 if (requestGeneration == generation) {
                     onSuccess(text, inputSessionId)
@@ -82,7 +89,7 @@ class AiVoiceController(
                     onFailure(error.message ?: "网络异常")
                 }
             } finally {
-                file.delete()
+                file?.delete()
                 if (requestGeneration == generation) {
                     processingJob = null
                     onFinished()

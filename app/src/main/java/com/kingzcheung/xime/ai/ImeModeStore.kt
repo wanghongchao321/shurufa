@@ -27,7 +27,26 @@ class ImeModeStore(context: Context) {
         current = mode
     }
 
+    var chineseLayout: ChineseKeyboardLayout
+        get() = runCatching {
+            ChineseKeyboardLayout.valueOf(
+                preferences.getString(KEY_CHINESE_LAYOUT, ChineseKeyboardLayout.T9.name)!!
+            )
+        }.getOrDefault(ChineseKeyboardLayout.T9)
+        private set(value) {
+            preferences.edit().putString(KEY_CHINESE_LAYOUT, value.name).apply()
+        }
+
+    fun toggleChineseLayout(): ChineseKeyboardLayout {
+        chineseLayout = when (chineseLayout) {
+            ChineseKeyboardLayout.T9 -> ChineseKeyboardLayout.FULL
+            ChineseKeyboardLayout.FULL -> ChineseKeyboardLayout.T9
+        }
+        return chineseLayout
+    }
+
     private companion object {
         const val KEY_MODE = "mode"
+        const val KEY_CHINESE_LAYOUT = "chinese_keyboard_layout"
     }
 }

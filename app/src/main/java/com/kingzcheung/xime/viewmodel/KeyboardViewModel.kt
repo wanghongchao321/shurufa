@@ -22,6 +22,7 @@ import com.kingzcheung.xime.ui.keyboard.KeyboardLayoutAction
 import com.kingzcheung.xime.ui.keyboard.KeyboardViewState
 import com.kingzcheung.xime.ui.keyboard.initialKeyboardLayoutState
 import com.kingzcheung.xime.util.FileLogger
+import com.kingzcheung.xime.ai.InputMode
 
 enum class ShiftMode { OFF, SINGLE, CAPS }
 
@@ -39,6 +40,7 @@ data class SchemaSwitchUiState(
 )
 
 data class KeyboardUiState(
+    val aiInputMode: InputMode = InputMode.CN,
     val isAsciiMode: Boolean = false,
     val schemaName: String = "",
     val currentSchemaId: String = "",
@@ -146,6 +148,7 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
                     else -> when (newKb) {
                         is KeyboardLayoutState.Chinese -> KeyboardViewState.ChineseFull
                         is KeyboardLayoutState.English -> KeyboardViewState.EnglishFull
+                        is KeyboardLayoutState.French -> KeyboardViewState.EnglishFull
                         is KeyboardLayoutState.T9Pinyin -> KeyboardViewState.T9PinyinFull
                         is KeyboardLayoutState.Stroke -> KeyboardViewState.StrokeFull
                         else -> current
@@ -186,6 +189,7 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
                                 val vs = when (kb) {
                                     is KeyboardLayoutState.Chinese -> KeyboardViewState.ChineseFull
                                     is KeyboardLayoutState.English -> KeyboardViewState.EnglishFull
+                                    is KeyboardLayoutState.French -> KeyboardViewState.EnglishFull
                                     is KeyboardLayoutState.T9Pinyin -> KeyboardViewState.T9PinyinFull
                                     is KeyboardLayoutState.Stroke -> KeyboardViewState.StrokeFull
                                     else -> KeyboardViewState.ChineseFull
@@ -224,6 +228,7 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
                     val vs = when (kb) {
                         is KeyboardLayoutState.Chinese -> KeyboardViewState.ChineseFull
                         is KeyboardLayoutState.English -> KeyboardViewState.EnglishFull
+                        is KeyboardLayoutState.French -> KeyboardViewState.EnglishFull
                         is KeyboardLayoutState.T9Pinyin -> KeyboardViewState.T9PinyinFull
                         is KeyboardLayoutState.Stroke -> KeyboardViewState.StrokeFull
                         else -> KeyboardViewState.ChineseFull
@@ -244,6 +249,7 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
                     val vs = when (kb) {
                         is KeyboardLayoutState.Chinese -> KeyboardViewState.ChineseFull
                         is KeyboardLayoutState.English -> KeyboardViewState.EnglishFull
+                        is KeyboardLayoutState.French -> KeyboardViewState.EnglishFull
                         is KeyboardLayoutState.T9Pinyin -> KeyboardViewState.T9PinyinFull
                         is KeyboardLayoutState.Stroke -> KeyboardViewState.StrokeFull
                         else -> KeyboardViewState.ChineseFull
@@ -282,7 +288,7 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
         }
         _viewState.value = newState
         _page.value = newPage
-        if (newKbState is KeyboardLayoutState.English) {
+        if (newKbState is KeyboardLayoutState.English || newKbState is KeyboardLayoutState.French) {
             _isShifted.value = false
             _shiftMode.value = ShiftMode.OFF
         }
@@ -332,7 +338,7 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
 
     fun setKeyboardState(state: KeyboardLayoutState) {
         val prevKb = _keyboardState.value
-        if (state is KeyboardLayoutState.English) {
+        if (state is KeyboardLayoutState.English || state is KeyboardLayoutState.French) {
             _isShifted.value = false
             _shiftMode.value = ShiftMode.OFF
         } else {
@@ -358,6 +364,7 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
                 com.kingzcheung.xime.keyboard.MainType.FULL -> when (kb) {
                     is KeyboardLayoutState.Chinese -> KeyboardViewState.ChineseFull
                     is KeyboardLayoutState.English -> KeyboardViewState.EnglishFull
+                    is KeyboardLayoutState.French -> KeyboardViewState.EnglishFull
                     is KeyboardLayoutState.T9Pinyin -> KeyboardViewState.T9PinyinFull
                     is KeyboardLayoutState.Stroke -> KeyboardViewState.StrokeFull
                     is KeyboardLayoutState.Number -> KeyboardViewState.NumberPanel(com.kingzcheung.xime.keyboard.MainType.FULL)

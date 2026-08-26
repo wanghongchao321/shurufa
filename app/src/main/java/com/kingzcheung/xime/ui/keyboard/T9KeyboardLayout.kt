@@ -755,10 +755,10 @@ private fun T9KeyboardContent(
                 )
                 IconKeyButton(
                     icon = rememberVectorPainter(Icons.Default.Language),
-                    onClick = { onKeyPress("ime_switch") },
+                    onClick = { callbacks.onToggleChineseLayout?.invoke() },
                     backgroundColor = keyBackgroundColor, iconColor = keyTextColor,
                     modifier = Modifier.weight(1f),
-                    onPress = { onKeyPressDown?.invoke("ime_switch") },
+                    onPress = { onKeyPressDown?.invoke("toggle_chinese_layout") },
                     shadowEnabled = shadowEnabled, shadowElevation = shadowElevation, shadowShapeRadius = shadowShapeRadius,
                 )
             }

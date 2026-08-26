@@ -42,7 +42,7 @@ object RimeConfigHelper {
         }
         
         copyAssetsToRimeDir(context, rimeDir)
-        enforceSingleSchema(context, rimeDir)
+        enforceBuiltInSchemas(context, rimeDir)
         // F1: assets 会用内置 default.yaml 覆盖，这里把启用方案重新写回 schema_list
         SchemaManager.applyEnabledSchemasToDefaultYaml(context)
         // 为所有启用方案打个人词库补丁
@@ -111,7 +111,7 @@ object RimeConfigHelper {
         }
         
         copyAssetsToRimeDir(context, rimeDir)
-        enforceSingleSchema(context, rimeDir)
+        enforceBuiltInSchemas(context, rimeDir)
         // F1: 同步初始化路径也写回 default.yaml 的 schema_list
         SchemaManager.applyEnabledSchemasToDefaultYaml(context)
         runBlocking { PersonalDictManager.ensureSchemaPacks(context) }
@@ -120,19 +120,26 @@ object RimeConfigHelper {
         return Pair(rimeDir.absolutePath, rimeDir.absolutePath)
     }
 
-    /** 升级安装时清理旧方案，只保留拼音九宫格及其词典依赖。 */
-    private fun enforceSingleSchema(context: Context, rimeDir: File) {
+    /** 升级安装时只保留产品内置的九键、全键拼音与法语方案。 */
+    private fun enforceBuiltInSchemas(context: Context, rimeDir: File) {
         ensureBundledAsset(context, rimeDir, "t9_pinyin.schema.yaml")
+        ensureBundledAsset(context, rimeDir, "pinyin_full.schema.yaml")
         ensureBundledAsset(context, rimeDir, "pinyin_simp.dict.yaml")
+        ensureBundledAsset(context, rimeDir, "french.schema.yaml")
+        ensureBundledAsset(context, rimeDir, "french.dict.yaml")
         rimeDir.listFiles { file -> file.isFile && file.name.endsWith(".schema.yaml") }
-            ?.filterNot { it.name == "${SchemaManager.PRIMARY_SCHEMA_ID}.schema.yaml" }
+            ?.filterNot {
+                it.name.removeSuffix(".schema.yaml") in SchemaManager.BUILT_IN_SCHEMA_IDS
+            }
             ?.forEach { staleSchema ->
                 if (!staleSchema.delete()) {
                     Log.w(TAG, "Unable to remove disabled schema: ${staleSchema.name}")
                 }
             }
-        SchemaManager.setEnabledSchemas(context, listOf(SchemaManager.PRIMARY_SCHEMA_ID))
-        SettingsPreferences.setCurrentSchema(context, SchemaManager.PRIMARY_SCHEMA_ID)
+        SchemaManager.setEnabledSchemas(context, SchemaManager.BUILT_IN_SCHEMA_IDS)
+        if (SettingsPreferences.getCurrentSchema(context) !in SchemaManager.BUILT_IN_SCHEMA_IDS) {
+            SettingsPreferences.setCurrentSchema(context, SchemaManager.PRIMARY_SCHEMA_ID)
+        }
     }
 
     private fun ensureBundledAsset(context: Context, rimeDir: File, fileName: String) {

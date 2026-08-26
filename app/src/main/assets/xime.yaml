@@ -447,16 +447,16 @@ keyboard:
       # ── 第一行 ──
       q: { tap: "q", swipe_up: "1", long_press: { display: "bubble", values: ["q", "Q"] } }
       w: { tap: "w", swipe_up: "2", long_press: { display: "bubble", values: ["w", "W"] } }
-      e: { tap: "e", swipe_up: "3", long_press: { display: "bubble", values: ["e", "E"] } }
+      e: { tap: "e", swipe_up: "3", long_press: { display: "bubble", values: ["e", "E", "é", "è", "ê", "ë"] } }
       r: { tap: "r", swipe_up: "4", long_press: { display: "bubble", values: ["r", "R"] } }
       t: { tap: "t", swipe_up: "5", long_press: { display: "bubble", values: ["t", "T"] } }
-      y: { tap: "y", swipe_up: "6", long_press: { display: "bubble", values: ["y", "Y"] } }
-      u: { tap: "u", swipe_up: "7", long_press: { display: "bubble", values: ["u", "U"] } }
-      i: { tap: "i", swipe_up: "8", long_press: { display: "bubble", values: ["i", "I"] } }
-      o: { tap: "o", swipe_up: "9", long_press: { display: "bubble", values: ["o", "O"] } }
+      y: { tap: "y", swipe_up: "6", long_press: { display: "bubble", values: ["y", "Y", "ÿ"] } }
+      u: { tap: "u", swipe_up: "7", long_press: { display: "bubble", values: ["u", "U", "ù", "û", "ü"] } }
+      i: { tap: "i", swipe_up: "8", long_press: { display: "bubble", values: ["i", "I", "î", "ï"] } }
+      o: { tap: "o", swipe_up: "9", long_press: { display: "bubble", values: ["o", "O", "ô", "œ"] } }
       p: { tap: "p", swipe_up: "0", long_press: { display: "bubble", values: ["p", "P"] } }
       # ── 第二行 ──
-      a: { tap: "a", swipe_up: "~", long_press: { display: "bubble", values: ["a", "A"] } }
+      a: { tap: "a", swipe_up: "~", long_press: { display: "bubble", values: ["a", "A", "à", "â", "æ"] } }
       s: { tap: "s", swipe_up: "/", long_press: { display: "bubble", values: ["s", "S"] } }
       d: { tap: "d", swipe_up: ":", long_press: { display: "bubble", values: ["d", "D"] } }
       f: { tap: "f", swipe_up: ";", long_press: { display: "bubble", values: ["f", "F"] } }
@@ -470,7 +470,7 @@ keyboard:
       # ── 第三行 ──
       z: { tap: "z", swipe_up: "*", long_press: { display: "bubble", values: ["z", "Z"] } }
       x: { tap: "x", swipe_up: "@", long_press: { display: "bubble", values: ["x", "X"] } }
-      c: { tap: "c", swipe_up: "、", long_press: { display: "bubble", values: ["c", "C"] } }
+      c: { tap: "c", swipe_up: "、", long_press: { display: "bubble", values: ["c", "C", "ç"] } }
       v: { tap: "v", swipe_up: "?", long_press: { display: "bubble", values: ["v", "V"] } }
       b: { tap: "b", swipe_up: "!", long_press: { display: "bubble", values: ["b", "B"] } }
       n: { tap: "n", swipe_up: "%", long_press: { display: "bubble", values: ["n", "N"] } }

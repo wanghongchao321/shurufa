@@ -18,6 +18,9 @@ sealed class KeyboardLayoutState {
     /** 英文全键盘（纯 QWERTY，无手势配置；横屏自动切换为分体键盘） */
     data object English : KeyboardLayoutState()
 
+    /** 法语全键盘（QWERTY 键位，由 french Rime 方案提供法语候选） */
+    data object French : KeyboardLayoutState()
+
     /** 数字键盘 */
     data object Number : KeyboardLayoutState()
 
@@ -34,7 +37,8 @@ sealed class KeyboardLayoutState {
     data object T9Pinyin : KeyboardLayoutState()
 
     /** 是否为全键盘类（Chinese / English / T9Pinyin） */
-    val isFullKeyboard: Boolean get() = this is Chinese || this is English || this is T9Pinyin
+    val isFullKeyboard: Boolean get() =
+        this is Chinese || this is English || this is French || this is T9Pinyin
 }
 
 /**
@@ -76,6 +80,7 @@ fun KeyboardLayoutState.transition(
         KeyboardLayoutAction.SwitchToCommonSymbol -> KeyboardLayoutState.CommonSymbol
         KeyboardLayoutAction.SwitchToStroke -> KeyboardLayoutState.Stroke
         KeyboardLayoutAction.SwitchToFull -> when {
+            schemaId == "french" -> KeyboardLayoutState.French
             isAsciiMode -> KeyboardLayoutState.English
             isT9Schema(schemaId) -> KeyboardLayoutState.T9Pinyin
             else -> KeyboardLayoutState.Chinese
@@ -90,6 +95,7 @@ fun initialKeyboardLayoutState(
     isAsciiMode: Boolean,
     schemaId: String = "",
 ): KeyboardLayoutState = when {
+    schemaId == "french" -> KeyboardLayoutState.French
     isT9Schema(schemaId) && !isAsciiMode -> KeyboardLayoutState.T9Pinyin
     schemaId == "stroke" && !isAsciiMode -> KeyboardLayoutState.Stroke
     isAsciiMode -> KeyboardLayoutState.English

@@ -141,11 +141,17 @@ fun KeyboardLayout(
     val shadowElevation = kbShadow.elevation.dp
     val shadowShapeRadius = kbShadow.shapeRadius.dp
     val schemaName = uiState.schemaName
+    val spaceKeyLabel = when (uiState.aiInputMode) {
+        com.kingzcheung.xime.ai.InputMode.EN -> "English"
+        com.kingzcheung.xime.ai.InputMode.FR -> "Français"
+        else -> schemaName
+    }
     val enterKeyText = uiState.enterKeyText
     val isDarkTheme = uiState.isDarkTheme
     val isSttEnabled = uiState.isSttEnabled
     val isVoiceMode = uiState.isVoiceMode
     val isVoiceSticky = uiState.voiceSticky
+    val showChineseLayoutToggle = uiState.aiInputMode.usesChineseKeyboard
     val keyRows = KeysConfigHelper.getKeyRows(isAsciiMode)
     val onKeyPressDown = callbacks.onKeyPressDown
     val onKeyRelease = callbacks.onKeyRelease
@@ -162,9 +168,9 @@ fun KeyboardLayout(
                 overlayRoute?.let { viewModel.showOverlay(it) }
             }
             GestureAction.TOGGLE_ASCII -> {
-                FileLogger.i("XimeKeyboard", "earth key toggle_ascii tapped, ui ascii=${uiState.isAsciiMode}")
+                FileLogger.i("XimeKeyboard", "earth key toggles Chinese keyboard layout")
                 viewModel.resetShift()
-                callbacks.onKeyPress("ime_switch", uiState.isAsciiMode)
+                callbacks.onToggleChineseLayout?.invoke()
             }
             GestureAction.DELETE -> {
                 callbacks.onKeyPress("delete", false)
@@ -640,7 +646,9 @@ fun KeyboardLayout(
                                     Unit
                                 }
                             }
-                            if (k2TapAction == GestureAction.TOGGLE_ASCII) {
+                            if (k2TapAction == GestureAction.TOGGLE_ASCII && !showChineseLayoutToggle) {
+                                Spacer(modifier = Modifier.weight(0.8f))
+                            } else if (k2TapAction == GestureAction.TOGGLE_ASCII) {
                                 IconKeyButton(
                                     icon = rememberVectorPainter(Icons.Default.Language),
                                     onClick = k2OnClick,
@@ -681,7 +689,7 @@ fun KeyboardLayout(
                         }
 
                         SpaceKey(
-                            schemaName = schemaName,
+                            schemaName = spaceKeyLabel,
                             isAsciiMode = isAsciiMode,
                             isSttEnabled = isSttEnabled,
                             isVoiceMode = isVoiceMode,
@@ -779,7 +787,9 @@ fun KeyboardLayout(
                                     Unit
                                 }
                             }
-                            if (k4TapAction == GestureAction.TOGGLE_ASCII && k4LongPressLabels == null && k4Icon != null) {
+                            if (k4TapAction == GestureAction.TOGGLE_ASCII && !showChineseLayoutToggle) {
+                                Spacer(modifier = Modifier.weight(0.8f))
+                            } else if (k4TapAction == GestureAction.TOGGLE_ASCII && k4LongPressLabels == null && k4Icon != null) {
                                 IconKeyButton(
                                     icon = k4Icon,
                                     onClick = k4OnClick,
@@ -1206,6 +1216,12 @@ private fun LandscapeKeyboardContent(
     val shadowElevation = kbShadow.elevation.dp
     val shadowShapeRadius = kbShadow.shapeRadius.dp
     val schemaName = uiState.schemaName
+    val spaceKeyLabel = when (uiState.aiInputMode) {
+        com.kingzcheung.xime.ai.InputMode.EN -> "English"
+        com.kingzcheung.xime.ai.InputMode.FR -> "Français"
+        else -> schemaName
+    }
+    val showChineseLayoutToggle = uiState.aiInputMode.usesChineseKeyboard
     val enterKeyText = uiState.enterKeyText
     val onKeyPressDown = callbacks.onKeyPressDown
     val onKeyRelease = callbacks.onKeyRelease
@@ -1221,9 +1237,9 @@ private fun LandscapeKeyboardContent(
                 overlayRoute?.let { viewModel.showOverlay(it) }
             }
             GestureAction.TOGGLE_ASCII -> {
-                FileLogger.i("XimeKeyboard", "earth key toggle_ascii tapped, ui ascii=${uiState.isAsciiMode}")
+                FileLogger.i("XimeKeyboard", "earth key toggles Chinese keyboard layout")
                 viewModel.resetShift()
-                callbacks.onKeyPress("ime_switch", uiState.isAsciiMode)
+                callbacks.onToggleChineseLayout?.invoke()
             }
             GestureAction.DELETE -> {
                 callbacks.onKeyPress("delete", false)
@@ -1356,7 +1372,9 @@ private fun LandscapeKeyboardContent(
                     val k2SwipeLabel = if (isAsciiMode) k2SwipeValue
                         else (k2Gesture?.swipeUp?.label?.takeIf { it.isNotEmpty() } ?: k2SwipeValue)
                     val k2Swipe = k2SwipeValue
-                    if (k2Action == GestureAction.TOGGLE_ASCII) {
+                    if (k2Action == GestureAction.TOGGLE_ASCII && !showChineseLayoutToggle) {
+                        Spacer(modifier = Modifier.weight(0.8f))
+                    } else if (k2Action == GestureAction.TOGGLE_ASCII) {
                         IconKeyButton(
                             icon = rememberVectorPainter(Icons.Default.Language),
                             onClick = {
@@ -1396,7 +1414,7 @@ private fun LandscapeKeyboardContent(
                     onClick = { onKeyPress("space") },
                     backgroundColor = keyBackgroundColor,
                     textColor = keyTextColor,
-                    schemaName = if (isAsciiMode) "English" else schemaName,
+                    schemaName = spaceKeyLabel,
                     modifier = Modifier.weight(3f),
                     onPress = { onKeyPressDown?.invoke("space") },
                     shadowEnabled = shadowEnabled,
@@ -1525,7 +1543,7 @@ private fun LandscapeKeyboardContent(
                     onClick = { onKeyPress("space") },
                     backgroundColor = keyBackgroundColor,
                     textColor = keyTextColor,
-                    schemaName = if (isAsciiMode) "English" else "",
+                    schemaName = spaceKeyLabel,
                     modifier = Modifier.weight(2f),
                     onPress = { onKeyPressDown?.invoke("space") },
                     shadowEnabled = shadowEnabled,
@@ -1555,7 +1573,9 @@ private fun LandscapeKeyboardContent(
                 val k4Action = k4Gesture?.tap?.action
                 val k4Value = k4Gesture?.tap?.value?.takeIf { it.isNotEmpty() } ?: k4Gesture?.tap?.label?.takeIf { it.isNotEmpty() } ?: "ime_switch"
                 val k4Label = k4Gesture?.tap?.label?.takeIf { it.isNotEmpty() } ?: "中"
-                if (k4Action == GestureAction.TOGGLE_ASCII) {
+                if (k4Action == GestureAction.TOGGLE_ASCII && !showChineseLayoutToggle) {
+                    Spacer(modifier = Modifier.weight(0.8f))
+                } else if (k4Action == GestureAction.TOGGLE_ASCII) {
                     IconKeyButton(
                         icon = rememberVectorPainter(Icons.Default.Language),
                         onClick = {
@@ -2259,7 +2279,7 @@ private fun SpaceKey(
             }
             else -> {
                 Text(
-                    text = if (isAsciiMode) "English" else schemaName,
+                    text = schemaName,
                     color = keyTextColor,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,

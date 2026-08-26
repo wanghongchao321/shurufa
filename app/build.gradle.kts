@@ -36,6 +36,10 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
+    sourceSets.named("main") {
+        assets.srcDir("src/main/aiRimeAssets")
+    }
+
     namespace = "com.kingzcheung.xime"
     compileSdk = 36
 
@@ -43,8 +47,8 @@ android {
         applicationId = "com.kingzcheung.xime"
         minSdk = 28
         targetSdk = 35
-        versionCode = 20260829
-        versionName = "3.0.2-ai"
+        versionCode = 20260830
+        versionName = "3.1.0-ai"
 
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

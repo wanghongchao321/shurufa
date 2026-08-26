@@ -81,9 +81,9 @@ fun KeyboardLayoutScreen(
             }
 
             GestureAction.TOGGLE_ASCII -> {
-                FileLogger.i("XimeKeyboard", "earth key toggle_ascii tapped, ui ascii=${uiState.isAsciiMode}")
+                FileLogger.i("XimeKeyboard", "earth key toggles Chinese keyboard layout")
                 viewModel.resetShift()
-                callbacks.onKeyPress("ime_switch", uiState.isAsciiMode)
+                callbacks.onToggleChineseLayout?.invoke()
             }
 
             else -> callbacks.onGestureAction?.invoke(action, value) ?: Unit
@@ -153,6 +153,19 @@ fun KeyboardLayoutScreen(
                         modifier = modifier,
                     )
                 }
+            }
+
+            is KeyboardLayoutState.French -> {
+                KeyboardLayout(
+                    onKeyPress = onKeyPress,
+                    viewModel = viewModel,
+                    callbacks = callbacks,
+                    uiState = uiState,
+                    // Use the standard Latin QWERTY key configuration while
+                    // Rime remains in non-ASCII mode to produce French candidates.
+                    isAsciiMode = true,
+                    modifier = modifier,
+                )
             }
 
             is KeyboardLayoutState.Number -> {

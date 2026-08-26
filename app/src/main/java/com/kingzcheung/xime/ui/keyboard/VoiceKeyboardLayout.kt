@@ -1,48 +1,39 @@
 package com.kingzcheung.xime.ui.keyboard
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kingzcheung.xime.speech.RecognitionState
 import com.kingzcheung.xime.ui.theme.KeyboardThemes
 
+/** 老版本式的大状态卡片；避免音量采样触发多组动画和整键盘高频重组。 */
 @Composable
 fun VoiceKeyboardLayout(
     keyBackgroundColor: Color,
@@ -58,205 +49,94 @@ fun VoiceKeyboardLayout(
     pluginName: String = "",
     recognitionState: RecognitionState = RecognitionState.IDLE,
     recognizedText: String = "",
-    amplitude: Float = 0f,
-    spectrum: FloatArray = FloatArray(16)
 ) {
     val accentColor = KeyboardThemes.getAccentColor(themeId, isDarkTheme)
-    val inactiveColor = if (isDarkTheme) Color.Gray.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.9f)
-    val activeColor = accentColor
-    
+    val cardColor = when (recognitionState) {
+        RecognitionState.IDLE -> accentColor
+        RecognitionState.LISTENING -> Color(0xFFD43838)
+        RecognitionState.PROCESSING -> Color(0xFF6B7280)
+        RecognitionState.ERROR -> Color(0xFFD97706)
+    }
+    val defaultStatus = when (recognitionState) {
+        RecognitionState.IDLE -> "按住空格开始说话"
+        RecognitionState.LISTENING -> "正在聆听，松开后识别"
+        RecognitionState.PROCESSING -> "正在识别…"
+        RecognitionState.ERROR -> "识别失败，请重试"
+    }
+    val helper = when (recognitionState) {
+        RecognitionState.LISTENING -> "松开空格立即提交录音"
+        RecognitionState.PROCESSING -> "正在处理，请稍候"
+        RecognitionState.ERROR -> "返回键盘后可重新录音"
+        RecognitionState.IDLE -> ""
+    }
+
     Column(
         modifier = modifier
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxSize()
+            .background(keyboardBackgroundColor)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(top = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (pluginName.isNotEmpty()) {
-                Text(
-                    text = pluginName,
-                    color = keyTextColor.copy(alpha = 0.6f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-            
-            val statusText = when (recognitionState) {
-                RecognitionState.IDLE -> "长按空格开始说话"
-                RecognitionState.LISTENING -> "正在聆听..."
-                RecognitionState.PROCESSING -> "正在识别..."
-                RecognitionState.ERROR -> "识别出错"
-            }
-            
+        if (pluginName.isNotBlank()) {
             Text(
-                text = statusText,
-                color = keyTextColor.copy(alpha = 0.8f),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center
+                text = pluginName,
+                color = keyTextColor.copy(alpha = 0.65f),
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            
-            if (recognizedText.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                
+            Spacer(Modifier.height(8.dp))
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            color = cardColor,
+            contentColor = Color.White,
+            shape = RoundedCornerShape(22.dp),
+            tonalElevation = 2.dp,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(Color.White.copy(alpha = 0.18f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = Color.White,
+                    )
+                }
+                Spacer(Modifier.height(14.dp))
                 Text(
-                    text = recognizedText,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
+                    text = recognizedText.ifBlank { defaultStatus },
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
-                    maxLines = 4,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 24.dp)
                 )
-            }
-        }
-        
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(64.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(
-                    modifier = Modifier.size(if (leftActive) 64.dp else 56.dp)
-                ) {
-                    drawCircle(
-                        color = if (leftActive) activeColor else inactiveColor,
-                        radius = size.minDimension / 2f
+                if (helper.isNotBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = helper,
+                        color = Color.White.copy(alpha = 0.78f),
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
                     )
                 }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Undo,
-                    contentDescription = "撤销",
-                    tint = if (leftActive) Color.White else if (isDarkTheme) Color.DarkGray else Color.Gray,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .scale(if (leftActive) 1.15f else 1f)
-                )
             }
-            
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(56.dp)
-                    .clip(RoundedCornerShape(28.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawRoundRect(
-                        color = inactiveColor.copy(alpha = 0.3f),
-                        topLeft = Offset.Zero,
-                        size = size,
-                        cornerRadius = CornerRadius(28.dp.toPx(), 28.dp.toPx())
-                    )
-                }
-                
-                AudioSpectrumAnimation(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    isActive = recognitionState == RecognitionState.LISTENING || 
-                               recognitionState == RecognitionState.PROCESSING,
-                    amplitude = amplitude,
-                    spectrum = spectrum
-                )
-            }
-            
-            Box(
-                modifier = Modifier.size(64.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(
-                    modifier = Modifier.size(if (rightActive) 64.dp else 56.dp)
-                ) {
-                    drawCircle(
-                        color = if (rightActive) activeColor else inactiveColor,
-                        radius = size.minDimension / 2f
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Default.ArrowUpward,
-                    contentDescription = "发送",
-                    tint = if (rightActive) Color.White else if (isDarkTheme) Color.DarkGray else Color.Gray,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .scale(if (rightActive) 1.15f else 1f)
-                )
-            }
-        }
-        
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                val canvasWidth = size.width
-                val canvasHeight = size.height
-                
-                val centerX = canvasWidth / 2f
-                val baseRadius = canvasWidth * 0.8f
-                val centerY = baseRadius + canvasHeight * 0.05f
-                
-                val bottomPath = Path().apply {
-                    moveTo(0f, canvasHeight)
-                    lineTo(canvasWidth, canvasHeight)
-                    lineTo(canvasWidth, 0f)
-                    arcTo(
-                        Rect(centerX - baseRadius, centerY - baseRadius, centerX + baseRadius, centerY + baseRadius),
-                        startAngleDegrees = 0f,
-                        sweepAngleDegrees = -180f,
-                        forceMoveTo = false
-                    )
-                    lineTo(0f, canvasHeight)
-                    close()
-                }
-                
-                val baseColor = if (bottomActive) Color.White else inactiveColor
-                drawPath(
-                    path = bottomPath,
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            baseColor.copy(alpha = 0.8f),
-                            baseColor.copy(alpha = 0.5f),
-                            baseColor.copy(alpha = 0.0f)
-                        ),
-                        startY = 0f,
-                        endY = canvasHeight
-                    )
-                )
-            }
-            
-            Text(
-                text = "松开结束",
-                color = if (bottomActive) Color.DarkGray else Color.Gray,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp)
-            )
         }
     }
 }
 
+/** 候选栏常驻语音模式使用的轻量频谱；直接绘制，不创建逐条动画状态。 */
 @Composable
 fun AudioSpectrumAnimation(
     modifier: Modifier = Modifier,
@@ -268,63 +148,22 @@ fun AudioSpectrumAnimation(
     spacingRatio: Float = 0.6f,
     heightScale: Float = 0.85f,
 ) {
-    if (!isActive) {
-        Canvas(modifier = modifier) {}
-        return
-    }
-
-    val amplitudeValue = amplitude.coerceIn(0f, 1f)
-
-    // 每根条的目标高度：优先真实频谱频段值，无频谱时退化为整体振幅
-    val barTargets = remember(spectrum, amplitudeValue, barCount) {
-        FloatArray(barCount) { index ->
-            if (spectrum.isNotEmpty()) {
-                spectrum[index % spectrum.size]
-            } else {
-                amplitudeValue
-            }
-        }
-    }
-    val animatedValues = barTargets.mapIndexed { index, target ->
-        animateFloatAsState(
-            targetValue = target,
-            animationSpec = tween(durationMillis = 120),
-            label = "spectrumBar$index"
-        )
-    }
-
-    val colors = listOf(
-        Color(0xFFFF6B6B),
-        Color(0xFFFF8E72),
-        Color(0xFFFF9F43),
-        Color(0xFFFFB86C),
-        Color(0xFFFFEAA7),
-        Color(0xFF55EFC4),
-        Color(0xFF74D7AE),
-        Color(0xFF54A0FF),
-        Color(0xFF5F27CD),
-    )
-
     Canvas(modifier = modifier) {
+        if (!isActive || barCount <= 0) return@Canvas
         val barWidth = size.width / (barCount * barWidthFactor)
         val spacing = barWidth * spacingRatio
-        val maxHeight = size.height
-
+        val totalWidth = barCount * barWidth + (barCount - 1) * spacing
+        val startX = (size.width - totalWidth) / 2f
         repeat(barCount) { index ->
-            val barHeight = maxHeight * animatedValues[index].value.coerceIn(0.05f, 0.98f) * heightScale
-
-            val totalWidth = barCount * barWidth + (barCount - 1) * spacing
-            val startX = (size.width - totalWidth) / 2f
-            val x = startX + index * (barWidth + spacing)
-            val y = (maxHeight - barHeight) / 2f
-
-            val barAlpha = 0.5f + amplitudeValue * 0.5f
-
+            val source = spectrum.getOrNull(index % spectrum.size.coerceAtLeast(1))
+                ?: amplitude
+            val value = source.coerceIn(0.08f, 1f)
+            val barHeight = size.height * value * heightScale
             drawRoundRect(
-                color = colors[index % colors.size].copy(alpha = barAlpha),
-                topLeft = Offset(x, y),
+                color = Color(0xFF54A0FF),
+                topLeft = Offset(startX + index * (barWidth + spacing), (size.height - barHeight) / 2f),
                 size = Size(barWidth, barHeight),
-                cornerRadius = CornerRadius(barWidth / 2f, barWidth / 2f)
+                cornerRadius = CornerRadius(barWidth / 2f),
             )
         }
     }

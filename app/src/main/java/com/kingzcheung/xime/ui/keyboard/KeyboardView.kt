@@ -621,7 +621,8 @@ fun KeyboardView(
                         }
                         val currentOnKeyPress = when (keyboardState) {
                             is KeyboardLayoutState.Chinese,
-                            is KeyboardLayoutState.English -> fullScreenOnKeyPress
+                            is KeyboardLayoutState.English,
+                            is KeyboardLayoutState.French -> fullScreenOnKeyPress
                             is KeyboardLayoutState.Number -> numberOnKeyPress
                             is KeyboardLayoutState.CommonSymbol -> commonSymbolOnKeyPress
                             is KeyboardLayoutState.Stroke -> strokeOnKeyPress
@@ -728,8 +729,6 @@ fun KeyboardView(
                             pluginName = state.voicePluginName,
                             recognitionState = state.voiceRecognitionState,
                             recognizedText = state.voiceRecognizedText,
-                            amplitude = voiceAmplitudeState.value,
-                            spectrum = voiceSpectrumState.value
                         )
                     }
                 }

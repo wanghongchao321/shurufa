@@ -26,6 +26,7 @@ data class KeyboardCallbacks(
     val onHideKeyboard: (() -> Unit)? = null,
     val onSwitchKeyboard: (() -> Unit)? = null,
     val onAiModeSelect: ((InputMode) -> Unit)? = null,
+    val onToggleChineseLayout: (() -> Unit)? = null,
     val onToolbarEditingAction: ((String) -> Unit)? = null,
     val onCommitImage: ((String) -> Unit)? = null,
     val onVoiceModeChange: ((Boolean) -> Unit)? = null,

@@ -13,4 +13,13 @@ class InputModeTest {
         assertFalse(InputMode.ZH_EN.usesLatinKeyboard)
         assertFalse(InputMode.ZH_FR.usesLatinKeyboard)
     }
+
+    @Test
+    fun `only Chinese source modes expose the nine key full key toggle`() {
+        assertTrue(InputMode.CN.usesChineseKeyboard)
+        assertTrue(InputMode.ZH_EN.usesChineseKeyboard)
+        assertTrue(InputMode.ZH_FR.usesChineseKeyboard)
+        assertFalse(InputMode.EN.usesChineseKeyboard)
+        assertFalse(InputMode.FR.usesChineseKeyboard)
+    }
 }
