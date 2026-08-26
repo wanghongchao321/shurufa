@@ -14,18 +14,27 @@ columns:
 # Élisions courantes.  The space in the code is matched by Rime's apostrophe
 # delimiter, so typing j'ai / l'homme keeps the apostrophe in the candidate.
 j'ai	j ai	110000
+j'ai	ja	120000
 j'aime	j aime	109999
+j'aime	jaime	119999
 j'étais	j etais	109998
+j'étais	jetais	119998
 j'ai été	j ai ete	109997
 j'avais	j avais	109996
+j'avais	javais	119996
 j'aurai	j aurai	109995
+j'aurai	jaurai	119995
 j'aurais	j aurais	109994
+j'aurais	jaurais	119994
 j'arrive	j arrive	109993
 j'appelle	j appelle	109992
 j'allais	j allais	109991
 l'homme	l homme	109990
+l'homme	lhomme	119990
 l'enfant	l enfant	109989
+l'enfant	lenfant	119989
 l'école	l ecole	109988
+l'école	lecole	119988
 l'eau	l eau	109987
 l'heure	l heure	109986
 l'amour	l amour	109985
@@ -37,24 +46,35 @@ l'argent	l argent	109980
 l'Afrique	l afrique	109979
 l'Europe	l europe	109978
 d'accord	d accord	109977
+d'accord	daccord	119977
 d'abord	d abord	109976
+d'abord	dabord	119976
 d'ailleurs	d ailleurs	109975
+d'ailleurs	dailleurs	119975
 d'être	d etre	109974
 d'avoir	d avoir	109973
 d'un	d un	109972
 d'une	d une	109971
 c'est	c est	109970
+c'est	cest	119970
 c'était	c etait	109969
+c'était	cetait	119969
 c'est-à-dire	c est a dire	109968
 n'est	n est	109967
 qu'il	qu il	109966
+qu'il	quil	119966
 qu'elle	qu elle	109965
+qu'elle	quelle	119965
 qu'on	qu on	109964
+qu'on	quon	119964
 qu'ils	qu ils	109963
 qu'elles	qu elles	109962
 s'il	s il	109961
+s'il	sil	119961
 s'ils	s ils	109960
+s'ils	sils	119960
 aujourd'hui	aujourd hui	109959
+aujourd'hui	aujourdhui	119959
 un	un	99999
 à	a	99998
 en	en	99997

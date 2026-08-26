@@ -250,7 +250,8 @@ internal class ImeKeyRouter(private val service: XimeInputMethodService) {
                             val input = candState.inputText
                             if (input.isNotEmpty()) {
                                 withContext(Dispatchers.Main) {
-                                    service.commitText(input)
+                                    val textToCommit = if (state.currentSchemaId == "french") "$input " else input
+                                    service.commitText(textToCommit)
                                     service.candidateState.value = service.candidateState.value.copy(
                                         inputText = "",
                                         preeditText = "",
@@ -837,8 +838,19 @@ internal class ImeKeyRouter(private val service: XimeInputMethodService) {
                     append(candidatePinyin)
                 }
             }
+            // French is a word-completion keyboard: confirming any Rime word
+            // leaves the cursor ready for the next word, like mobile French
+            // keyboards.  Other schemas keep their existing behavior.
+            val textWithTrailingSpace = if (
+                !isT9 && service.uiState.value.currentSchemaId == "french" &&
+                fullCommitText.isNotBlank() && !fullCommitText.last().isWhitespace()
+            ) {
+                "$fullCommitText "
+            } else {
+                fullCommitText
+            }
             withContext(Dispatchers.Main) {
-                service.commitText(fullCommitText)
+                service.commitText(textWithTrailingSpace)
                 service.t9PartialSegments.clear()
                 service.candidateState.value = service.candidateState.value.copy(
                     inputText = "",
