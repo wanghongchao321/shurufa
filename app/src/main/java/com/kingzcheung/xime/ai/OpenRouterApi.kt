@@ -21,6 +21,9 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+// OkHttp rejects non-ASCII HTTP header values before the request is sent.
+internal const val OPENROUTER_APP_TITLE = "Africa King IME"
+
 class OpenRouterApi(
     private val apiKey: String,
     private val model: String,
@@ -144,7 +147,7 @@ class OpenRouterApi(
         val request = Request.Builder()
             .url(OPENROUTER_TRANSCRIPTION_URL)
             .header("Authorization", "Bearer $apiKey")
-            .header("X-OpenRouter-Title", "非洲王输入法")
+            .header("X-OpenRouter-Title", OPENROUTER_APP_TITLE)
             .post(
                 requestBody.toString()
                     .toRequestBody("application/json".toMediaType())
@@ -297,7 +300,7 @@ class OpenRouterApi(
         val request = Request.Builder()
             .url(OPENROUTER_CHAT_URL)
             .header("Authorization", "Bearer $apiKey")
-            .header("X-OpenRouter-Title", "非洲王输入法")
+            .header("X-OpenRouter-Title", OPENROUTER_APP_TITLE)
             .post(
                 requestBody.toString()
                     .toRequestBody("application/json".toMediaType())
