@@ -1,8 +1,0 @@
-<resources>
-    <style name="Theme.VoiceTranslateIme" parent="android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#3158D4</item>
-        <item name="android:navigationBarColor">#F5F6FA</item>
-        <item name="android:windowLightNavigationBar">true</item>
-    </style>
-</resources>

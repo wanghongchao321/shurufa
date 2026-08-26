@@ -1,80 +1,185 @@
-# 非洲王输入法
+# 非洲王输入法（Xime + OpenRouter AI）
 
-[![Build Android IME](https://github.com/wanghongchao321/shurufa/actions/workflows/android-build.yml/badge.svg)](https://github.com/wanghongchao321/shurufa/actions/workflows/android-build.yml)
+本项目直接以 [Xime](https://github.com/ximeiorg/Xime) 源码为键盘与 Rime 输入引擎基础，并集成原“非洲王输入法”的 OpenRouter 语音逻辑：
 
-这是一个不依赖自建后端的 Android IME。APK 录音后直接调用 OpenRouter：
+- 候选栏空闲时显示“中文、英文、法语、中英、中法”五种 AI 模式；开始拼音/五笔输入后自动恢复 Xime 候选栏。
+- 轻触空格正常输入空格；长按空格开始录音，松开后提交 OpenRouter 处理。
+- 中文、中英、中法使用 `qwen/qwen3-asr-flash-2026-02-10`；中英/中法随后使用 Gemini 3.5 Flash Lite 翻译。
+- 英文、法语并行调用 `google/chirp-3` 与 `openai/gpt-transcribe`，再由 `openai/gpt-5.6-luna` 校验输出。
+- 录音为 16 kHz 单声道、32 kbps AAC/M4A，约 4 KB/秒。
+- GitHub Actions 从仓库 Secret `SHURUFA` 注入 `OPENROUTER_API_KEY`。
 
-- 第一行集中放置“中文、英文、法语、中英、中法”五个语音模式；第二行放置“ABC/语音、删除、清空、发送”。
-- 点击“ABC”可把底部语音按钮切换为四行英文 QWERTY 键盘，支持大小写、退格、空格、撇号、逗号、句号和发送；点击“语音”返回语音输入。
-- 底部大按钮按下开始录音，松开后发送并上屏。
-- 录音采用 16 kHz、单声道、32 kbps AAC，约 4 KB/秒，在保持快速上传的同时保留更多口音语音细节。
-- 中文、中英、中法模式的中文语音都直接使用 OpenRouter 内的 `qwen/qwen3-asr-flash-2026-02-10` 转写。
-- 音频按 OpenRouter 当前 STT 接口要求以 Base64 JSON 上传；请求失败时按钮会保持橙色并显示原因，按住即可重试。
-- 中文模式由 Qwen3 ASR Flash 自动检测输入语言和中文方言并直接上屏，减少等待时间。
-- 中英和中法模式固定 `language=zh`，由 Qwen3 ASR Flash 识别中文后再翻译成目标语言。
-- 处理中会显示“Qwen Flash识别、翻译、双模型识别、Luna校验”等阶段，点按底部按钮可取消并重新录音。
-- 英文和法语模式都把同一段音频并行发送给 `google/chirp-3` 和 `openai/gpt-transcribe`，分别固定 `language=en` 和 `language=fr`；随后由 `openai/gpt-5.6-luna` 比较一致与冲突词、结合上下文裁决并只输出最终英文或法语。
-- 中英模式固定识别中文后翻译成英文；中法模式固定识别中文后翻译成法语。
-- `google/gemini-3.5-flash-lite` 只处理中英/中法翻译，不直接接收音频；英文和法语校验均由 GPT-5.6 Luna 完成。
-- 中文模式只调用一次转写接口；其他模式的 Lite 请求按最低延迟提供商路由，并限制输出长度。
-- 发送按钮兼容普通输入框，并针对微信、WhatsApp 和 WhatsApp Business 处理发送动作。
+本派生项目遵循上游 Xime 的 GNU GPLv3 许可证；上游版权和许可证文件均予以保留。
 
-## 安全说明
+---
 
-独立 APK 必须在客户端持有 OpenRouter API Key。即使使用混淆，攻击者仍可能从 APK 或运行时流量中提取 Key。建议：
+<p align="center">
+  <img src="docs/logo.jpg" alt="Xime Logo" width="600">
+</p>
 
-- 为本应用创建独立 Key，不要复用主账号 Key。
-- 在 OpenRouter 设置严格的额度和速率限制。
-- 定期轮换 Key。
-- 不要把 Key 提交到 Git 仓库。
+<h1 align="center">Xime - Wubi / Pinyin Input Method for Android</h1>
 
-## GitHub Actions 编译
+<p align="center">
+  <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a>
+</p>
 
-在仓库中添加 Actions Secret：
+[Windows Version](https://github.com/ximeiorg/winxime) | [Linux Version](https://github.com/ximeiorg/xime-wayland) | [Predictive Text Model](https://github.com/ximeiorg/predictive-text) | [Handwriting Model](https://github.com/ximeiorg/ochwpro)
 
-1. 打开 **Settings → Secrets and variables → Actions**。
-2. 新建 Repository secret，名称为 `SHURUFA`。
-3. 值填写单独为本应用创建的 OpenRouter Key。
-4. 打开 **Actions → Build Android IME → Run workflow**。
-5. 构建成功后下载 `FeizhouWangIme-debug-apk`。
+An Android input method built on the [Rime](https://rime.im/) engine, designed for efficient Chinese text input with Wubi (五笔) and Pinyin support.
 
-工作流在编译时通过 Gradle 属性把 Secret 写入 `BuildConfig.OPENROUTER_API_KEY`，Key 不会进入 Git 源码，但会存在于最终 APK 中。
+---
 
-## 本地编译
+> This input method supports both Wubi (五笔) and Pinyin input. The author primarily uses Wubi with Pinyin as a fallback, so resources lean toward Wubi.
 
-需要 Android SDK 35、JDK 17 和 Gradle 8.9：
+<table align="center">
+  <tr>
+    <td><img src="docs/Screenshot/full_keyboard_light.jpg" width="180"><br><p align="center">Full Keyboard (Light)</p></td>
+    <td><img src="docs/Screenshot/full_keyboard_dark.jpg" width="180"><br><p align="center">Full Keyboard (Dark)</p></td>
+    <td><img src="docs/Screenshot/全键盘_下滑_light.jpg" width="180"><br><p align="center">Radical Swipe</p></td>
+    <td><img src="docs/Screenshot/shotcut_light.jpg" width="180"><br><p align="center">Quick Actions</p></td>
+  </tr>
+  <tr>
+    <td><img src="docs/Screenshot/floating.jpg" width="180"><br><p align="center">Floating Keyboard</p></td>
+    <td><img src="docs/Screenshot/t9_pinyin.jpg" width="180"><br><p align="center">T9 Pinyin</p></td>
+    <td><img src="docs/Screenshot/number.jpg" width="180"><br><p align="center">Numpad</p></td>
+    <td><img src="docs/Screenshot/symbol.jpg" width="180"><br><p align="center">Symbols</p></td>
+  </tr>
+  <tr>
+    <td><img src="docs/Screenshot/hw.png" width="180"><br><p align="center">Handwriting</p></td>
+    <td><img src="docs/Screenshot/hw2.png" width="180"><br><p align="center">Handwriting (Candidates)</p></td>
+    <td><img src="docs/Screenshot/voice.jpg" width="180"><br><p align="center">Voice Input</p></td>
+    <td><img src="docs/Screenshot/emoji.jpg" width="180"><br><p align="center">Emoji Keyboard</p></td>
+  </tr>
+  <tr>
+    <td><img src="docs/Screenshot/theme_light.jpg" width="180"><br><p align="center">Theme Settings (Light)</p></td>
+    <td><img src="docs/Screenshot/theme_dark.jpg" width="180"><br><p align="center">Theme Settings (Dark)</p></td>
+    <td><img src="docs/Screenshot/plugin_light.jpg" width="180"><br><p align="center">Plugin Manager</p></td>
+    <td><img src="docs/Screenshot/扩展商店.png" width="180"><br><p align="center">Extension Store</p></td>
+  </tr>
+</table>
+
+## Features
+
+- **Multiple Input Schemas** - Built-in Wubi 86/98, Pinyin, and mixed schemas; supports custom schemas (Shuangpin, Stroke, etc.) via the schema marketplace or wireless import
+- **Rime Engine** - Powered by the mature and reliable Rime input method engine for accurate Chinese input
+- **Rich Keyboard Layouts** - QWERTY full keyboard, T9 Pinyin, Stroke 9-key, Handwriting, Numpad (with calculator)
+- **Floating Keyboard** - Floating card style with drag support, semi-transparent rounded design
+- **Voice-to-Text** - Local offline ASR (built-in streaming zipformer2 engine) plus online ASR plugins (FunAsr, Volc, etc.)
+- **AI Enhancement** - Transformer-based predictive text for faster input
+- **Clean UI** - Material Design 3, light/dark themes with multiple color schemes
+- **Keyboard Adjustment** - Adjustable keyboard height and position
+- **Toolbar Customization** - Customizable toolbar button layout and functions
+- **Haptic Feedback** - Adjustable sound and vibration intensity
+- **Swipe Gestures** - Cursor movement, deletion, symbol input via swipe gestures
+- **Clipboard Manager** - Clipboard history with quick send and pinning
+- **Clipboard Sync** - Bidirectional clipboard sync with remote devices via plugins (WebDAV, ximed, etc.)
+- **Candidate Coding Hints** - Display Wubi codes for candidates to aid learning
+- **Radical Display** - Swipe down on keys to show Wubi radicals for memory aid
+- **Physical Keyboard Support** - Floating candidate bar when using hardware/bluetooth keyboards
+- **WebDAV Sync** - Backup and restore schemas and settings via WebDAV
+- **Plugin Marketplace** - Extensible Lua plugins (emoji, clipboard sync, online ASR, etc.) via the built-in marketplace
+
+## Requirements
+
+- Android 9.0 (API 28) or later
+
+## Installation
+
+### Download
+
+Choose the APK matching your device architecture:
+- **arm64-v8a**: Modern phones (recommended for most users)
+- **armeabi-v7a**: Older 32-bit phones
+- **x86_64**: Emulators
+- **universal**: All architectures (larger file size)
+
+### From Releases
+
+1. Download the latest APK from [Releases](https://github.com/ximeiorg/Xime/releases)
+2. Install the application
+3. Enable Xime in system input method settings
+4. Set Xime as the current input method
+
+### Plugins (Optional)
+
+Plugins are Lua-script plugins (`.xipk` format), installable and enabled from the app's Settings > Extension Store:
+- **kaomoji**: Kaomoji text emoticons
+- **meme-bunny**: Funny bunny sticker pack (8 stickers)
+- **xime-fluent-emoji**: Fluent UI 3D-style emoji plugin (222 curated 3D emojis, 9 categories)
+- **funasr-asr**: Alibaba Bailian FunAsr online speech recognition
+- **volc-asr**: Volcano Engine online speech recognition
+- **webdav-clipboard-sync**: WebDAV-based clipboard sync
+- **ximed-clipboard-sync**: ximed-service-based clipboard sync
+
+For the full plugin list, see the [Plugin Center](https://ime.ximei.me/plugin-list.html), or browse and install directly from the app's Settings > Extension Store.
+
+### Build from Source
+
+1. Clone the project and build the APK
+2. Install the application
+3. Enable Xime in system input method settings
+4. Set Xime as the current input method
+
+## Documentation
+
+For detailed documentation, visit [https://ime.ximei.me](https://ime.ximei.me).
+
+## Building
 
 ```bash
-gradle \
-  -POPENROUTER_API_KEY="你的_OpenRouter_Key" \
-  :app:assembleDebug
+# Clone with submodules
+git clone --recursive https://github.com/ximeiorg/Xime.git
+
+# Or initialize submodules in an existing clone
+git submodule update --init --recursive
+
+# Build Release APK
+./gradlew assembleRelease
 ```
 
-也可以在用户级 `~/.gradle/gradle.properties` 中设置：
+### AI Model Download
 
-```properties
-OPENROUTER_API_KEY=你的_OpenRouter_Key
-OPENROUTER_MODEL=google/gemini-3.5-flash-lite
-```
+#### Predictive Text Model
 
-不要把 Key 写入项目目录内受 Git 跟踪的 `gradle.properties`。
+- **Repository**: https://github.com/ximeiorg/predictive-text
+- **Model**: https://www.modelscope.cn/models/bikeand/predictive-text-small
+- **File**: `model_int8_dynamic.onnx` (~17MB)
+- **Vocabulary**: `vocab.json`
+- **Location**: `filesDir/` (app private directory root)
+- **Function**: Transformer-based Chinese word prediction for intelligent candidate suggestions
 
-## 安装与启用
+#### Speech Recognition Model
 
-1. 安装生成的 Debug APK。
-2. 打开“非洲王输入法”。
-3. 授予麦克风权限。
-4. 点击“启用输入法”，在系统设置中启用。
-5. 点击“选择输入法”，切换到本输入法。
-6. 点击上方模式按钮，再按住底部大按钮讲话，松开后等待上屏。
+- **Model**: https://www.modelscope.cn/models/bikeand/asr
+- **File**: `sherpa-onnx-streaming-zipformer-zh-int8-2025-06-30.tar.bz2` (~132MB)
+- **Function**: Streaming zipformer2 Chinese speech recognition (offline, on-device)
 
-## 项目结构
+**Note**: All models can be downloaded directly from within the app (Settings > Smart Prediction / Speech Recognition) — no manual placement required.
 
-```text
-app/src/main/java/com/example/voicetranslateime/
-├── VoiceImeService.kt   IME 界面、录音和上屏
-├── OpenRouterApi.kt     手机直连 OpenRouter
-├── ImeAudioRecorder.kt  M4A 录音
-├── ImeModeStore.kt      模式持久化
-└── PermissionActivity.kt 权限和输入法启用页
-```
+## Tech Stack
+
+- Kotlin
+- Jetpack Compose
+- Material Design 3
+- Rime (librime)
+- JNI (Native C++)
+
+## Contributing
+
+Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a PR.
+
+Core rules:
+- **File an Issue first** — All changes require a prior discussion via an Issue
+- **Minimal changes** — PRs must contain only the minimum changes needed
+- **GPG signing** — All commits must be GPG-signed
+
+## Acknowledgments
+
+- [Rime](https://rime.im/) - Input method engine
+- [Trime](https://github.com/osfans/trime) - Configuration reference
+- [fcitx5-android](https://github.com/fcitx5-android/fcitx5-android) - Keyboard layout reference
+- [onnxruntime](https://github.com/microsoft/onnxruntime) - ONNX inference runtime for predictive text and speech recognition models
+
+## License
+
+GPLv3 License

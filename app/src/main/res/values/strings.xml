@@ -1,4 +1,7 @@
 <resources>
-    <string name="app_name">非洲王输入法</string>
-    <string name="ime_name">非洲王输入法</string>
+<string name="app_name">非洲王输入法</string>
+    <string name="subtype_label_wubi">非洲王输入法</string>
+    <string name="subtype_label_pinyin">拼音</string>
+    <string name="keyboard_name">非洲王输入法</string>
+    <string name="ime_service_label">非洲王输入法</string>
 </resources>
