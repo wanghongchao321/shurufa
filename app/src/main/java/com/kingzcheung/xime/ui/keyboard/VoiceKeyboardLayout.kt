@@ -49,8 +49,13 @@ fun VoiceKeyboardLayout(
     pluginName: String = "",
     recognitionState: RecognitionState = RecognitionState.IDLE,
     recognizedText: String = "",
+    amplitude: Float = 0f,
 ) {
     val accentColor = KeyboardThemes.getAccentColor(themeId, isDarkTheme)
+    // Directly map recorder amplitude to the microphone halo.  This avoids
+    // allocating per-bar animations while still giving immediate feedback that
+    // the microphone is receiving the user's voice.
+    val volumeLevel = amplitude.coerceIn(0f, 1f)
     val cardColor = when (recognitionState) {
         RecognitionState.IDLE -> accentColor
         RecognitionState.LISTENING -> Color(0xFFD43838)
@@ -102,14 +107,14 @@ fun VoiceKeyboardLayout(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(52.dp)
-                        .background(Color.White.copy(alpha = 0.18f), CircleShape),
+                        .size((52f + volumeLevel * 12f).dp)
+                        .background(Color.White.copy(alpha = 0.18f + volumeLevel * 0.36f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Mic,
                         contentDescription = null,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size((28f + volumeLevel * 7f).dp),
                         tint = Color.White,
                     )
                 }

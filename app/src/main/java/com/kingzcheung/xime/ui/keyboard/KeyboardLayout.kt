@@ -151,6 +151,7 @@ fun KeyboardLayout(
     val isSttEnabled = uiState.isSttEnabled
     val isVoiceMode = uiState.isVoiceMode
     val isVoiceSticky = uiState.voiceSticky
+    val isFrenchMode = uiState.aiInputMode == com.kingzcheung.xime.ai.InputMode.FR
     val showChineseLayoutToggle = uiState.aiInputMode.usesChineseKeyboard
     val keyRows = KeysConfigHelper.getKeyRows(isAsciiMode)
     val onKeyPressDown = callbacks.onKeyPressDown
@@ -586,18 +587,23 @@ fun KeyboardLayout(
                             // 逗号 — 从配置读取 "'"
                             val k2KeyGesture = KeysConfigHelper.getKeyGesture("'", isAsciiMode)
                             val k2TapAction = k2KeyGesture?.tap?.action
-                            val k2TapValue = k2KeyGesture?.tap?.value?.takeIf { it.isNotEmpty() }
-                                ?: k2KeyGesture?.tap?.label?.takeIf { it.isNotEmpty() }
-                                ?: if (isAsciiMode) "," else "，"
-                            val k2TapLabel = k2KeyGesture?.tap?.label?.takeIf { it.isNotEmpty() } ?: k2TapValue
+                            // French needs a real apostrophe key for elisions
+                            // such as J'ai and l'homme.  It is sent to Rime as
+                            // its word delimiter, rather than as punctuation.
+                            val k2TapValue = if (isFrenchMode) "word_separator" else
+                                (k2KeyGesture?.tap?.value?.takeIf { it.isNotEmpty() }
+                                    ?: k2KeyGesture?.tap?.label?.takeIf { it.isNotEmpty() }
+                                    ?: if (isAsciiMode) "," else "，")
+                            val k2TapLabel = if (isFrenchMode) "'" else
+                                (k2KeyGesture?.tap?.label?.takeIf { it.isNotEmpty() } ?: k2TapValue)
                             val k2SwipeUpRaw = k2KeyGesture?.swipeUp
-                            val k2SwipeUpLabel = if (isAsciiMode)
+                            val k2SwipeUpLabel = if (isFrenchMode) "," else if (isAsciiMode)
                                 (k2SwipeUpRaw?.value?.takeIf { it.isNotEmpty() } ?: "")
                                 else (k2SwipeUpRaw?.label?.takeIf { it.isNotEmpty() } ?: k2SwipeUpRaw?.value?.takeIf { it.isNotEmpty() } ?: "")
                             val k2SwipeUpValue = k2SwipeUpRaw?.value?.takeIf { it.isNotEmpty() }
                                 ?: k2SwipeUpRaw?.label?.takeIf { it.isNotEmpty() }
                             val k2SwipeUpDisplay = k2SwipeUpRaw?.display ?: DisplayMode.BOTH
-                            val k2SwipeUpCommitValue = k2SwipeUpValue
+                            val k2SwipeUpCommitValue = if (isFrenchMode) "," else k2SwipeUpValue
                             val k2SwipeDownRaw = k2KeyGesture?.swipeDown
                             val k2SwipeDownLabel = k2SwipeDownRaw?.label?.takeIf { it.isNotEmpty() }
                             val k2SwipeDownAction = k2SwipeDownRaw?.action
@@ -1221,6 +1227,7 @@ private fun LandscapeKeyboardContent(
         com.kingzcheung.xime.ai.InputMode.FR -> "Français"
         else -> schemaName
     }
+    val isFrenchMode = uiState.aiInputMode == com.kingzcheung.xime.ai.InputMode.FR
     val showChineseLayoutToggle = uiState.aiInputMode.usesChineseKeyboard
     val enterKeyText = uiState.enterKeyText
     val onKeyPressDown = callbacks.onKeyPressDown
@@ -1365,10 +1372,13 @@ private fun LandscapeKeyboardContent(
                     )
                     val k2Gesture = KeysConfigHelper.getKeyGesture("'")
                     val k2Action = k2Gesture?.tap?.action
-                    val k2Tap = k2Gesture?.tap?.value?.takeIf { it.isNotEmpty() }
-                        ?: k2Gesture?.tap?.label?.takeIf { it.isNotEmpty() }
-                        ?: "，"
-                    val k2SwipeValue = k2Gesture?.swipeUp?.value?.takeIf { it.isNotEmpty() } ?: "。"
+                    val k2Tap = if (isFrenchMode) "word_separator" else
+                        (k2Gesture?.tap?.value?.takeIf { it.isNotEmpty() }
+                            ?: k2Gesture?.tap?.label?.takeIf { it.isNotEmpty() }
+                            ?: "，")
+                    val k2Display = if (isFrenchMode) "'" else k2Tap
+                    val k2SwipeValue = if (isFrenchMode) "," else
+                        (k2Gesture?.swipeUp?.value?.takeIf { it.isNotEmpty() } ?: "。")
                     val k2SwipeLabel = if (isAsciiMode) k2SwipeValue
                         else (k2Gesture?.swipeUp?.label?.takeIf { it.isNotEmpty() } ?: k2SwipeValue)
                     val k2Swipe = k2SwipeValue
@@ -1390,7 +1400,7 @@ private fun LandscapeKeyboardContent(
                         )
                     } else {
                         SwipeableKeyButtonLandscape(
-                            text = k2Tap,
+                            text = k2Display,
                             onClick = {
                                 if (k2Action != null && k2Action != GestureAction.COMMIT) {
                                     onGestureAction?.invoke(k2Action, k2Tap)

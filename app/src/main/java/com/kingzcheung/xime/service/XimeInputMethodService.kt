@@ -337,6 +337,9 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             scope = serviceScope,
             apiKey = BuildConfig.OPENROUTER_API_KEY,
             model = BuildConfig.OPENROUTER_MODEL,
+            onAmplitudeChanged = { amplitude ->
+                voiceAmplitudeState.floatValue = amplitude
+            },
         )
     }
 

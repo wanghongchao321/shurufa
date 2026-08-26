@@ -4,8 +4,8 @@
 schema:
   schema_id: french
   name: Français
-  version: "1.0"
-  description: Clavier français QWERTY avec dictionnaire embarqué
+  version: "1.2"
+  description: Clavier français QWERTY avec complétion, élisions et dictionnaire embarqué
 
 switches:
   - name: ascii_mode
@@ -37,13 +37,20 @@ engine:
 speller:
   alphabet: zyxwvutsrqponmlkjihgfedcba
   initials: zyxwvutsrqponmlkjihgfedcba
+  max_code_length: 32
+  auto_select: false
   delimiter: " '"
 
 translator:
   dictionary: french
-  enable_sentence: true
+  # table_translator does prefix lookup when completion is enabled, so typing
+  # "bon" can immediately offer "bonjour" and other French words.
+  enable_sentence: false
+  enable_encoder: true
   enable_completion: true
   enable_user_dict: true
+  initial_quality: 1
+  max_phrase_length: 8
 
 menu:
   page_size: 5

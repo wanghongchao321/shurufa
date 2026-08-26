@@ -70,6 +70,13 @@ class ImeAudioRecorder(
         releaseRecorder()
     }
 
+    /** Peak input level since the previous call, normalized for the voice UI. */
+    @Synchronized
+    fun normalizedAmplitude(): Float {
+        val peak = runCatching { recorder?.maxAmplitude ?: 0 }.getOrDefault(0)
+        return (peak / 12_000f).coerceIn(0f, 1f)
+    }
+
     private fun releaseRecorder() {
         runCatching { recorder?.reset() }
         runCatching { recorder?.release() }

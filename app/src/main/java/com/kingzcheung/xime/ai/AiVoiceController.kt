@@ -8,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 
@@ -16,11 +17,13 @@ class AiVoiceController(
     private val scope: CoroutineScope,
     apiKey: String,
     model: String,
+    private val onAmplitudeChanged: (Float) -> Unit = {},
 ) {
     private val recorder = ImeAudioRecorder(context)
     private val api = OpenRouterApi(apiKey = apiKey, model = model)
 
     private var processingJob: Job? = null
+    private var amplitudeJob: Job? = null
     private var generation = 0L
     private var recording = false
     private var activeMode = InputMode.CN
@@ -40,8 +43,12 @@ class AiVoiceController(
         activeMode = mode
         activeInputSessionId = inputSessionId
         recording = true
+        startAmplitudeMonitoring()
         Result.success(Unit)
     } catch (error: Throwable) {
+        amplitudeJob?.cancel()
+        amplitudeJob = null
+        onAmplitudeChanged(0f)
         withContext(NonCancellable + Dispatchers.IO) { recorder.cancel() }
         Result.failure(error)
     }
@@ -54,6 +61,7 @@ class AiVoiceController(
     ): Boolean {
         if (!recording) return false
         recording = false
+        stopAmplitudeMonitoring()
 
         val requestGeneration = ++generation
         val mode = activeMode
@@ -101,12 +109,30 @@ class AiVoiceController(
 
     fun cancel() {
         generation++
+        stopAmplitudeMonitoring()
         if (recording) {
             recorder.cancel()
             recording = false
         }
         processingJob?.cancel()
         processingJob = null
+    }
+
+    private fun startAmplitudeMonitoring() {
+        amplitudeJob?.cancel()
+        amplitudeJob = scope.launch {
+            while (recording) {
+                val amplitude = withContext(Dispatchers.IO) { recorder.normalizedAmplitude() }
+                onAmplitudeChanged(amplitude)
+                delay(80L)
+            }
+        }
+    }
+
+    private fun stopAmplitudeMonitoring() {
+        amplitudeJob?.cancel()
+        amplitudeJob = null
+        onAmplitudeChanged(0f)
     }
 
     private companion object {

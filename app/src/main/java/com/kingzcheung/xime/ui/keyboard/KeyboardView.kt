@@ -729,6 +729,7 @@ fun KeyboardView(
                             pluginName = state.voicePluginName,
                             recognitionState = state.voiceRecognitionState,
                             recognizedText = state.voiceRecognizedText,
+                            amplitude = voiceAmplitudeState.value,
                         )
                     }
                 }

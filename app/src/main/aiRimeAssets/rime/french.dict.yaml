@@ -11,6 +11,50 @@ columns:
   - code
   - weight
 ...
+# Élisions courantes.  The space in the code is matched by Rime's apostrophe
+# delimiter, so typing j'ai / l'homme keeps the apostrophe in the candidate.
+j'ai	j ai	110000
+j'aime	j aime	109999
+j'étais	j etais	109998
+j'ai été	j ai ete	109997
+j'avais	j avais	109996
+j'aurai	j aurai	109995
+j'aurais	j aurais	109994
+j'arrive	j arrive	109993
+j'appelle	j appelle	109992
+j'allais	j allais	109991
+l'homme	l homme	109990
+l'enfant	l enfant	109989
+l'école	l ecole	109988
+l'eau	l eau	109987
+l'heure	l heure	109986
+l'amour	l amour	109985
+l'année	l annee	109984
+l'autre	l autre	109983
+l'histoire	l histoire	109982
+l'idée	l idee	109981
+l'argent	l argent	109980
+l'Afrique	l afrique	109979
+l'Europe	l europe	109978
+d'accord	d accord	109977
+d'abord	d abord	109976
+d'ailleurs	d ailleurs	109975
+d'être	d etre	109974
+d'avoir	d avoir	109973
+d'un	d un	109972
+d'une	d une	109971
+c'est	c est	109970
+c'était	c etait	109969
+c'est-à-dire	c est a dire	109968
+n'est	n est	109967
+qu'il	qu il	109966
+qu'elle	qu elle	109965
+qu'on	qu on	109964
+qu'ils	qu ils	109963
+qu'elles	qu elles	109962
+s'il	s il	109961
+s'ils	s ils	109960
+aujourd'hui	aujourd hui	109959
 un	un	99999
 à	a	99998
 en	en	99997

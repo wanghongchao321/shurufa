@@ -13,6 +13,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 
@@ -144,10 +145,33 @@ object RimeConfigHelper {
 
     private fun ensureBundledAsset(context: Context, rimeDir: File, fileName: String) {
         val target = File(rimeDir, fileName)
-        if (target.exists()) return
+        // These three schemes are app-managed rather than user-installed.  Do
+        // not leave an old copy on device after an APK update: otherwise a
+        // new French dictionary/schema is packaged but never actually used.
+        if (target.exists() && bundledAssetMatches(context, target, fileName)) return
+        copyAssetFile(context, "$ASSETS_RIME_DIR/$fileName", target)
+    }
+
+    private fun bundledAssetMatches(context: Context, target: File, fileName: String): Boolean = try {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
         context.assets.open("$ASSETS_RIME_DIR/$fileName").use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
+            java.security.DigestInputStream(input, digest).use { stream ->
+                val buffer = ByteArray(8192)
+                while (stream.read(buffer) != -1) Unit
+            }
         }
+        val assetDigest = digest.digest()
+        val fileDigest = java.security.MessageDigest.getInstance("SHA-256")
+        FileInputStream(target).use { input ->
+            java.security.DigestInputStream(input, fileDigest).use { stream ->
+                val buffer = ByteArray(8192)
+                while (stream.read(buffer) != -1) Unit
+            }
+        }
+        assetDigest.contentEquals(fileDigest.digest())
+    } catch (error: IOException) {
+        Log.w(TAG, "Unable to compare bundled Rime asset: $fileName", error)
+        false
     }
     
     fun storeDeploymentHash(context: Context) {

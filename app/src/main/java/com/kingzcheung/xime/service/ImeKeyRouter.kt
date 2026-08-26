@@ -293,6 +293,12 @@ internal class ImeKeyRouter(private val service: XimeInputMethodService) {
                         } else {
                             needsUIUpdate = true
                         }
+                    } else if (state.currentSchemaId == "french") {
+                        // A capital first letter is committed directly by the
+                        // keyboard path (for example the J in J'ai).  Preserve
+                        // the apostrophe instead of silently dropping it.
+                        committedText = "'"
+                        needsUIUpdate = true
                     } else {
                         needsUIUpdate = true
                     }
