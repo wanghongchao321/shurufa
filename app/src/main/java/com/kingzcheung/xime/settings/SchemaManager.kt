@@ -68,6 +68,7 @@ internal data class SchemaEntry(
 )
 
 object SchemaManager {
+    const val PRIMARY_SCHEMA_ID = "t9_pinyin"
     private const val TAG = "SchemaManager"
     private const val CUSTOM_YAML = "default.custom.yaml"
     internal val yaml = Yaml(configuration = YamlConfiguration(strictMode = false, anchorsAndAliases = com.charleskorn.kaml.AnchorsAndAliases.Permitted(maxAliasCount = UInt.MAX_VALUE)))
@@ -585,7 +586,9 @@ object SchemaManager {
         if (!rimeDir.exists()) return emptyList()
 
         val schemas = mutableListOf<SchemaMeta>()
-        val schemaFiles = rimeDir.listFiles { f -> f.name.endsWith(".schema.yaml") }
+        val schemaFiles = rimeDir.listFiles { f ->
+            f.name == "$PRIMARY_SCHEMA_ID.schema.yaml"
+        }
             ?: return emptyList()
 
         for (file in schemaFiles) {
@@ -752,11 +755,11 @@ object SchemaManager {
     }
 
     fun getEnabledSchemas(context: Context): List<String> {
+        val onlySchema = listOf(PRIMARY_SCHEMA_ID)
         val customFile = getCustomYamlFile(context)
         if (!customFile.exists()) {
-            val defaultBuiltIn = listOf("wubi86", "wubi86_pinyin", "pinyin_simp", "t9_pinyin")
-            setEnabledSchemas(context, defaultBuiltIn)
-            return defaultBuiltIn
+            setEnabledSchemas(context, onlySchema)
+            return onlySchema
         }
 
         try {
@@ -778,19 +781,22 @@ object SchemaManager {
                     }
                 }
             }
-            if (schemas.isNotEmpty()) return schemas
+            if (schemas == onlySchema) return onlySchema
         } catch (e: Exception) {
             Log.e(TAG, "Failed to read custom.yaml", e)
         }
 
-        return listOf("wubi86", "wubi86_pinyin", "pinyin_simp", "t9_pinyin")
+        setEnabledSchemas(context, onlySchema)
+        return onlySchema
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun setEnabledSchemas(context: Context, schemaIds: List<String>) {
+        val lockedSchemaIds = listOf(PRIMARY_SCHEMA_ID)
         val sb = StringBuilder()
         sb.appendLine("patch:")
         sb.appendLine("  schema_list:")
-        for (id in schemaIds) {
+        for (id in lockedSchemaIds) {
             sb.appendLine("    - schema: $id")
         }
         try {
@@ -799,7 +805,7 @@ object SchemaManager {
             Log.e(TAG, "Failed to write custom.yaml", e)
         }
         // F1: 同步写进 default.yaml，确保 librime 真正编译启用的方案
-        applyEnabledSchemasToDefaultYaml(context, schemaIds)
+        applyEnabledSchemasToDefaultYaml(context, lockedSchemaIds)
     }
 
     fun toggleSchema(context: Context, schemaId: String) {

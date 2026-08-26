@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kingzcheung.xime.R
+import com.kingzcheung.xime.ai.InputMode
 import com.kingzcheung.xime.keyboard.KeyboardPage
 import com.kingzcheung.xime.keyboard.OverlayRoute
 import com.kingzcheung.xime.keyboard.PanelType
@@ -79,7 +80,8 @@ data class CandidateBarCallbacks(
     val onShowMoreCandidates: (() -> Unit)? = null,
     val onClearAssociation: (() -> Unit)? = null,
     val onInputTextClick: (() -> Unit)? = null,
-    val onAssociationSelect: ((Int) -> Unit)? = null
+    val onAssociationSelect: ((Int) -> Unit)? = null,
+    val onAiModeSelect: ((InputMode) -> Unit)? = null,
 )
 
 @Composable
@@ -109,6 +111,7 @@ fun CandidateBar(
     ) {
         AiModeBar(
             visuals = visuals,
+            onModeSelect = { callbacks.onAiModeSelect?.invoke(it) },
             modifier = modifier
                 .fillMaxWidth()
                 .height(50.dp),

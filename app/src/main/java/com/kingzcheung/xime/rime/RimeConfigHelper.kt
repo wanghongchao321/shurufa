@@ -42,6 +42,7 @@ object RimeConfigHelper {
         }
         
         copyAssetsToRimeDir(context, rimeDir)
+        enforceSingleSchema(context, rimeDir)
         // F1: assets 会用内置 default.yaml 覆盖，这里把启用方案重新写回 schema_list
         SchemaManager.applyEnabledSchemasToDefaultYaml(context)
         // 为所有启用方案打个人词库补丁
@@ -110,12 +111,36 @@ object RimeConfigHelper {
         }
         
         copyAssetsToRimeDir(context, rimeDir)
+        enforceSingleSchema(context, rimeDir)
         // F1: 同步初始化路径也写回 default.yaml 的 schema_list
         SchemaManager.applyEnabledSchemasToDefaultYaml(context)
         runBlocking { PersonalDictManager.ensureSchemaPacks(context) }
         // build 重建统一由 ensureDeployment() 增量优先决策，此处不删 build
         
         return Pair(rimeDir.absolutePath, rimeDir.absolutePath)
+    }
+
+    /** 升级安装时清理旧方案，只保留拼音九宫格及其词典依赖。 */
+    private fun enforceSingleSchema(context: Context, rimeDir: File) {
+        ensureBundledAsset(context, rimeDir, "t9_pinyin.schema.yaml")
+        ensureBundledAsset(context, rimeDir, "pinyin_simp.dict.yaml")
+        rimeDir.listFiles { file -> file.isFile && file.name.endsWith(".schema.yaml") }
+            ?.filterNot { it.name == "${SchemaManager.PRIMARY_SCHEMA_ID}.schema.yaml" }
+            ?.forEach { staleSchema ->
+                if (!staleSchema.delete()) {
+                    Log.w(TAG, "Unable to remove disabled schema: ${staleSchema.name}")
+                }
+            }
+        SchemaManager.setEnabledSchemas(context, listOf(SchemaManager.PRIMARY_SCHEMA_ID))
+        SettingsPreferences.setCurrentSchema(context, SchemaManager.PRIMARY_SCHEMA_ID)
+    }
+
+    private fun ensureBundledAsset(context: Context, rimeDir: File, fileName: String) {
+        val target = File(rimeDir, fileName)
+        if (target.exists()) return
+        context.assets.open("$ASSETS_RIME_DIR/$fileName").use { input ->
+            target.outputStream().use { output -> input.copyTo(output) }
+        }
     }
     
     fun storeDeploymentHash(context: Context) {

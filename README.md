@@ -2,7 +2,9 @@
 
 本项目直接以 [Xime](https://github.com/ximeiorg/Xime) 源码为键盘与 Rime 输入引擎基础，并集成原“非洲王输入法”的 OpenRouter 语音逻辑：
 
-- 候选栏空闲时显示“中文、英文、法语、中英、中法”五种 AI 模式；开始拼音/五笔输入后自动恢复 Xime 候选栏。
+- 候选栏空闲时显示“中文、英文、法语、中英、中法”五种 AI 模式；开始文字输入后自动恢复 Xime 候选栏。
+- 中文、中文转英文、中文转法语固定使用拼音九宫格；英文、法语固定使用 26 键 QWERTY，其他输入方案已移除。
+- 仅发布 `arm64-v8a` APK，不生成 32 位、x86 或 universal 版本。
 - 轻触空格正常输入空格；长按空格开始录音，松开后提交 OpenRouter 处理。
 - 中文、中英、中法使用 `qwen/qwen3-asr-flash-2026-02-10`；中英/中法随后使用 Gemini 3.5 Flash Lite 翻译。
 - 英文、法语并行调用 `google/chirp-3` 与 `openai/gpt-transcribe`，再由 `openai/gpt-5.6-luna` 校验输出。
@@ -10,6 +12,8 @@
 - GitHub Actions 从仓库 Secret `SHURUFA` 注入 `OPENROUTER_API_KEY`。
 
 本派生项目遵循上游 Xime 的 GNU GPLv3 许可证；上游版权和许可证文件均予以保留。
+
+以下内容为 Xime 上游项目的原始说明，部分多方案功能在本 AI 精简版中已关闭。
 
 ---
 

@@ -43,15 +43,15 @@ android {
         applicationId = "com.kingzcheung.xime"
         minSdk = 28
         targetSdk = 35
-        versionCode = 20260827
-        versionName = "3.0.0-ai"
+        versionCode = 20260828
+        versionName = "3.0.1-ai"
 
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // NDK 配置
         ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            abiFilters += "arm64-v8a"
         }
 
         // 构建信息
@@ -144,6 +144,20 @@ android {
 
     // 测试 classpath 包含 main assets，使 T9Decoder() 无参构造可加载 pinyin_lm.bin
     sourceSets {
+        getByName("main") {
+            // AI 精简版只提供拼音九宫格方案；英文/法语使用内置 QWERTY 布局。
+            // 保留 pinyin_simp.dict.yaml 作为 t9_pinyin 的词典依赖。
+            assets.exclude(
+                "rime/handwriting.schema.yaml",
+                "rime/numbers.schema.yaml",
+                "rime/pinyin_simp.schema.yaml",
+                "rime/wubi86.schema.yaml",
+                "rime/wubi86_pinyin.schema.yaml",
+                "rime/wubi86_trad.schema.yaml",
+                "rime/wubi86_trad_pinyin.schema.yaml",
+                "rime/wubi98.schema.yaml",
+            )
+        }
         getByName("test") {
             resources.srcDirs("src/main/assets")
         }
@@ -160,8 +174,8 @@ android {
         abi {
             isEnable = true
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = true
+            include("arm64-v8a")
+            isUniversalApk = false
         }
     }
 }

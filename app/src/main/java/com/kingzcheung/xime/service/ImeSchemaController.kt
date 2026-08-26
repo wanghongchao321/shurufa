@@ -267,6 +267,10 @@ internal class ImeSchemaController(private val service: XimeInputMethodService) 
     }
 
     internal fun switchSchema(schemaId: String) {
+        if (schemaId != SchemaManager.PRIMARY_SCHEMA_ID) {
+            Toast.makeText(service, "当前版本仅保留拼音九宫格", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (schemaId == HANDWRITING_SCHEMA_ID) {
             // 检查手写模型文件是否已下载
             if (!com.kingzcheung.xime.handwriting.HandwritingEngine.hasModel(service)) {

@@ -108,6 +108,7 @@ import com.kingzcheung.xime.util.PreeditMergeHelper
 import com.kingzcheung.xime.BuildConfig
 import com.kingzcheung.xime.ai.AiVoiceController
 import com.kingzcheung.xime.ai.ImeModeStore
+import com.kingzcheung.xime.ai.InputMode
 import com.kingzcheung.xime.keyboard.ActionExecutor
 import com.kingzcheung.xime.keyboard.HANDWRITING_SCHEMA_ID
 import com.kingzcheung.xime.keyboard.OverlayRoute
@@ -286,6 +287,21 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     )
 
     internal val aiModeStore by lazy { ImeModeStore(this) }
+
+    internal fun selectAiMode(mode: InputMode) {
+        aiModeStore.select(mode)
+        val targetAsciiMode = mode.usesLatinKeyboard
+        if (uiState.value.isAsciiMode != targetAsciiMode) {
+            keyRouter.handleKeyPress("ime_switch", false)
+        } else {
+            keyboardViewModel.dispatch(
+                com.kingzcheung.xime.ui.keyboard.KeyboardDispatchAction.AsciiModeChanged(
+                    targetAsciiMode,
+                    SchemaManager.PRIMARY_SCHEMA_ID,
+                )
+            )
+        }
+    }
     internal val aiVoiceController by lazy {
         AiVoiceController(
             context = this,
@@ -671,6 +687,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                     // 部署完成后这里补齐 UI 状态，保证键盘可用
                     sessionController.restorePersistedSchemaOptions()
                     updateUI()
+                    selectAiMode(aiModeStore.current)
                     Log.d(TAG, "initRimeEngine: Rime engine initialized successfully")
                 }
             } catch (e: Exception) {
@@ -1404,6 +1421,10 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         }
 
         attribute?.let { updateEnterKeyText(it) }
+        if (!restarting) {
+            // 新会话按已选择的 AI 模式恢复键盘：英文/法语 26 键，其余中文九宫格。
+            selectAiMode(aiModeStore.current)
+        }
     }
     
     private val highlightIndex = mutableIntStateOf(0)

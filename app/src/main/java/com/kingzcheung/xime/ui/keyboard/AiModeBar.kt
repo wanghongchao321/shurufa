@@ -26,6 +26,7 @@ import com.kingzcheung.xime.ai.InputMode
 @Composable
 internal fun AiModeBar(
     visuals: CandidateBarVisuals,
+    onModeSelect: (InputMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -46,6 +47,7 @@ internal fun AiModeBar(
                 onClick = {
                     store.select(mode)
                     selectedMode = mode
+                    onModeSelect(mode)
                 },
                 modifier = Modifier
                     .weight(1f)

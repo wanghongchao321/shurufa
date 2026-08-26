@@ -22,7 +22,6 @@ import androidx.compose.material.icons.automirrored.twotone.Assignment
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.twotone.DarkMode
 import androidx.compose.material.icons.twotone.EmojiEmotions
-import androidx.compose.material.icons.twotone.Keyboard
 import androidx.compose.material.icons.twotone.LightMode
 import androidx.compose.material.icons.twotone.Padding
 import androidx.compose.material.icons.twotone.PictureInPicture
@@ -112,7 +111,6 @@ fun MenuBar(
     }
     val deployIcon = rememberVectorPainter(Icons.TwoTone.Rotate90DegreesCcw)
     val customizeIcon = rememberVectorPainter(Icons.TwoTone.Padding)
-    val schemaIcon = rememberVectorPainter(Icons.TwoTone.Keyboard)
     val settingsIcon = rememberVectorPainter(Icons.TwoTone.Settings)
 
     val darkModeLabel = when (state.darkMode) {
@@ -137,7 +135,6 @@ fun MenuBar(
         listOf(
             MenuItem(clipboardIcon, "剪贴板", callbacks.onClipboard),
             MenuItem(quickSendIcon, "快捷发送", callbacks.onQuickSend),
-            MenuItem(schemaIcon, "输入方案", callbacks.onSchemaList),
             MenuItem(emojiIcon, "表情", callbacks.onEmoji),
         ) + switchItems + listOf(
             MenuItem(customizeIcon, "定制工具栏", callbacks.onToolbarCustomize),

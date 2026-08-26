@@ -1,5 +1,6 @@
 package com.kingzcheung.xime.ui.keyboard
 
+import com.kingzcheung.xime.ai.InputMode
 import com.kingzcheung.xime.keyboard.GestureAction
 import com.kingzcheung.xime.rime.RimeComposition
 import com.kingzcheung.xime.viewmodel.SchemaSwitchUiState
@@ -24,6 +25,7 @@ data class KeyboardCallbacks(
     val onToggleSchemaSwitch: ((SchemaSwitchUiState) -> Unit)? = null,
     val onHideKeyboard: (() -> Unit)? = null,
     val onSwitchKeyboard: (() -> Unit)? = null,
+    val onAiModeSelect: ((InputMode) -> Unit)? = null,
     val onToolbarEditingAction: ((String) -> Unit)? = null,
     val onCommitImage: ((String) -> Unit)? = null,
     val onVoiceModeChange: ((Boolean) -> Unit)? = null,

@@ -302,6 +302,9 @@ fun KeyboardView(
                 voicePluginName = state.voicePluginName,
                 toolbarActions = state.toolbarButtons.mapNotNull { id ->
                     val button = ToolbarButton.fromId(id) ?: return@mapNotNull null
+                    if (button == ToolbarButton.SCHEMA || button == ToolbarButton.HANDWRITING_LOOKUP) {
+                        return@mapNotNull null
+                    }
                     if (button == ToolbarButton.HANDWRITING_LOOKUP) {
                         if (!com.kingzcheung.xime.handwriting.HandwritingEngine.hasModel(LocalContext.current)) return@mapNotNull null
                     }
@@ -340,6 +343,7 @@ fun KeyboardView(
                     isDarkTheme = state.isDarkTheme
                 ),
                 callbacks = CandidateBarCallbacks(
+                    onAiModeSelect = { mode -> callbacks.onAiModeSelect?.invoke(mode) },
                     onCandidateSelect = { index ->
                         if (showHandwritingCandidates && index in handwritingCandidates.indices) {
                             val ch = handwritingCandidates[index]

@@ -106,6 +106,7 @@ internal fun rememberImeKeyboardCallbacks(
                 @Suppress("DEPRECATION")
                 imm.showInputMethodPicker()
             },
+            onAiModeSelect = { mode -> service.selectAiMode(mode) },
             onToolbarEditingAction = { action -> service.schemaController.handleToolbarEditingAction(action) },
             onCommitImage = { imagePath ->
                 val success = service.textCommit.commitImage(imagePath)

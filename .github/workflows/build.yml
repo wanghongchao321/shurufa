@@ -139,6 +139,6 @@ jobs:
       - name: Upload Debug APKs
         uses: actions/upload-artifact@v7
         with:
-          name: FeizhouWangIme-Xime-debug-apks
+          name: FeizhouWangIme-Xime-arm64-v8a-debug
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30

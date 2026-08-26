@@ -29,7 +29,7 @@ import kotlinx.coroutines.withContext
 data class SchemaUiState(
     val allSchemas: List<SchemaMeta> = emptyList(),
     val enabledSchemas: List<String> = emptyList(),
-    val currentSchema: String = "wubi86",
+    val currentSchema: String = SchemaManager.PRIMARY_SCHEMA_ID,
     val isDeploying: Boolean = false,
     val isDownloading: Boolean = false,
     val toastMessage: String? = null,
@@ -72,6 +72,10 @@ class SchemaSettingsViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun toggleSchema(schema: SchemaMeta) {
+        if (schema.schemaId != SchemaManager.PRIMARY_SCHEMA_ID) {
+            showToast("当前版本仅保留拼音九宫格")
+            return
+        }
         val enabled = _uiState.value.enabledSchemas.toMutableList()
         if (schema.schemaId in enabled) {
             if (enabled.size <= 1) {
@@ -91,6 +95,10 @@ class SchemaSettingsViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun selectSchema(schema: SchemaMeta) {
+        if (schema.schemaId != SchemaManager.PRIMARY_SCHEMA_ID) {
+            showToast("当前版本仅保留拼音九宫格")
+            return
+        }
         if (_uiState.value.currentSchema == schema.schemaId) return
         SettingsPreferences.setCurrentSchema(context, schema.schemaId)
         _uiState.update { it.copy(currentSchema = schema.schemaId) }
