@@ -71,16 +71,16 @@ jobs:
           from pathlib import Path
 
           lines = Path("gradle-native.log").read_text(errors="replace").splitlines()
-          useful = [
-              line for line in lines
-              if line.startswith(("e: ", "FAILURE:", "* What went wrong:"))
-              or "GradleException" in line
-              or "AAR missing" in line
-              or "Failed to download" in line
-              or "Execution failed for task" in line
-              or "Unresolved reference" in line
-          ][-60:]
-          for line in useful or lines[-50:]:
+          start = next(
+              (i for i, line in reversed(list(enumerate(lines))) if line.startswith("* What went wrong:")),
+              max(0, len(lines) - 12),
+          )
+          safe_lines = lines[start:start + 12]
+          import re
+          for line in safe_lines:
+              line = re.sub(r"https?://\S+", "<url>", line)
+              line = re.sub(r"/home/runner/work/\S+", "<workspace>", line)
+              line = re.sub(r"sk-[A-Za-z0-9_-]+", "<redacted-key>", line)
               escaped = line.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
               print(f"::error::{escaped}")
           PY
