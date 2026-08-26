@@ -72,7 +72,12 @@ jobs:
             cmake-${{ runner.os }}-
             
       - name: Run Unit Tests
-        run: ./gradlew :app:testDebugUnitTest :plugin-core:testDebugUnitTest --no-daemon
+        id: unit-tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest :plugin-core:testDebugUnitTest --no-daemon \
+            2>&1 | tee gradle-test.log
         
       - name: Generate Test Report
         if: always()
@@ -88,6 +93,37 @@ jobs:
           name: unit-test-results
           path: app/build/test-results/testDebugUnitTest/
           retention-days: 7
+
+      - name: Report test or compilation failure
+        if: steps.unit-tests.outcome == 'failure'
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          lines = Path("gradle-test.log").read_text(errors="replace").splitlines()
+          useful = [
+              line for line in lines
+              if line.startswith(("e: ", "FAILURE:", "* What went wrong:"))
+              or " error: " in line
+              or "Execution failed for task" in line
+              or "Unresolved reference" in line
+              or "Compilation error" in line
+              or "CMake Error" in line
+          ][-60:]
+
+          def escape(value):
+              return value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+          for line in useful or lines[-40:]:
+              print(f"::error::{escape(line)}")
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write("## Gradle failure\n\n```text\n")
+              summary.write("\n".join(lines[-160:]))
+              summary.write("\n```\n")
+          PY
+          exit 1
           
       - name: Build Debug APKs
         env:
