@@ -147,7 +147,8 @@ android {
         getByName("main") {
             // AI 精简版只提供拼音九宫格方案；英文/法语使用内置 QWERTY 布局。
             // 保留 pinyin_simp.dict.yaml 作为 t9_pinyin 的词典依赖。
-            assets.exclude(
+            assets.excludes.addAll(
+                setOf(
                 "rime/handwriting.schema.yaml",
                 "rime/numbers.schema.yaml",
                 "rime/pinyin_simp.schema.yaml",
@@ -156,6 +157,7 @@ android {
                 "rime/wubi86_trad.schema.yaml",
                 "rime/wubi86_trad_pinyin.schema.yaml",
                 "rime/wubi98.schema.yaml",
+                ),
             )
         }
         getByName("test") {
