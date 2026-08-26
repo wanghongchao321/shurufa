@@ -155,22 +155,12 @@ android {
         checkDependencies = true
     }
 
-    // 分架构打包
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a")
-            isUniversalApk = false
-        }
-    }
 }
 
 android.applicationVariants.all {
     val appName = "FeizhouWangIme"
     outputs.all {
-        val abi = filters.find { it.filterType.toString() == "ABI" }?.identifier ?: "universal"
-        (this as BaseVariantOutputImpl).outputFileName = "$appName-$versionName-$abi.apk"
+        (this as BaseVariantOutputImpl).outputFileName = "$appName-$versionName-arm64-v8a.apk"
     }
 }
 
