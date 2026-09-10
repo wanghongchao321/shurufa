@@ -19,11 +19,3 @@ Source: https://github.com/rime/librime
 License: BSD 3-Clause License
 
 Used as the core input method engine.
-
-================================================================================
-Rime-Ice dictionary data
-================================================================================
-Rime-Ice dictionary structure and bundled Chinese dictionary data
-Copyright (C) iDvel and contributors
-License: GPL-3.0-only
-Source: https://github.com/iDvel/rime-ice
