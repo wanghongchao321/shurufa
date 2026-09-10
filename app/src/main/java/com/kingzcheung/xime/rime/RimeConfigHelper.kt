@@ -123,9 +123,13 @@ object RimeConfigHelper {
 
     /** 升级安装时只保留产品内置的九键、全键拼音与法语方案。 */
     private fun enforceBuiltInSchemas(context: Context, rimeDir: File) {
+        ensureBundledAsset(context, rimeDir, "default.yaml")
         ensureBundledAsset(context, rimeDir, "t9_pinyin.schema.yaml")
         ensureBundledAsset(context, rimeDir, "pinyin_full.schema.yaml")
         ensureBundledAsset(context, rimeDir, "pinyin_simp.dict.yaml")
+        ensureBundledAsset(context, rimeDir, "cn_dicts/8105.dict.yaml")
+        ensureBundledAsset(context, rimeDir, "cn_dicts/base.dict.yaml")
+        ensureBundledAsset(context, rimeDir, "cn_dicts/ext.dict.yaml")
         ensureBundledAsset(context, rimeDir, "french.schema.yaml")
         ensureBundledAsset(context, rimeDir, "french.dict.yaml")
         rimeDir.listFiles { file -> file.isFile && file.name.endsWith(".schema.yaml") }

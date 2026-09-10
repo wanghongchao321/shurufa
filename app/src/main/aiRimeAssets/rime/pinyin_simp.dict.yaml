@@ -1,0 +1,17 @@
+# Rime dictionary
+# encoding: utf-8
+#
+# Curated from the Rime-Ice dictionary structure (GPL-3.0-only).
+# Tencent's optional, very large embedding list is deliberately excluded: the
+# bundled base and extended lists provide a practical offline dictionary while
+# keeping first-time deployment and APK size reasonable.
+---
+name: pinyin_simp
+version: "2026.09.10"
+sort: by_weight
+use_preset_vocabulary: false
+import_tables:
+  - cn_dicts/8105
+  - cn_dicts/base
+  - cn_dicts/ext
+...
