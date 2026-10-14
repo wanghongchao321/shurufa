@@ -381,7 +381,7 @@ class OpenRouterApi(
             "https://openrouter.ai/api/v1/audio/transcriptions"
         const val GPT_TRANSCRIPTION_MODEL = "openai/gpt-transcribe"
         const val QWEN_FLASH_TRANSCRIPTION_MODEL =
-            "qwen/qwen3-asr-flash-2026-02-10"
+            "qwen/qwen3-asr-1.7b"
         const val CHIRP_TRANSCRIPTION_MODEL = "google/chirp-3"
         const val ADJUDICATION_MODEL = "openai/gpt-5.6-luna"
         val ENGLISH_ADJUDICATION_INSTRUCTION =
